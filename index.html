@@ -1,0 +1,1679 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Klassenjournal</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Klassenjournal">
+<meta name="theme-color" content="#FFFFFF">
+<style>html{color-scheme:light dark}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Klassenjournal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Grundpalette der Seite — folgt der Systemeinstellung. */
+:root{
+  --paper:#F1F4F8; --grid:#DCE3EC; --surface:#FFFFFF; --surface-2:#E8EDF4;
+  --ink:#16233B; --ink-2:#4C5C78; --ink-3:#8593AC;
+  --line:#D2DAE6; --line-strong:#B9C4D4;
+  --accent:#2B4C7E; --accent-ink:#FFFFFF; --accent-soft:#DEE8F6;
+  --good:#1C7A5B; --good-ink:#FFFFFF; --good-soft:#D9EFE7;
+  --warn:#A9660A; --warn-soft:#F6E7CF;
+  --bad:#B23A2E; --bad-ink:#FFFFFF; --bad-soft:#F6DFDC;
+  --shadow:0 1px 2px rgba(22,35,59,.07), 0 6px 20px -12px rgba(22,35,59,.28);
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1620; --grid:#1A2432; --surface:#18212E; --surface-2:#212C3C;
+    --ink:#E8EEF7; --ink-2:#AAB8CD; --ink-3:#77869E;
+    --line:#2A3646; --line-strong:#3A4859;
+    --accent:#8AB0E4; --accent-ink:#0F1620; --accent-soft:#22314A;
+    --good:#3E9E7A; --good-ink:#FFFFFF; --good-soft:#16302A;
+    --warn:#E0A44A; --warn-soft:#33280F;
+    --bad:#C8544A; --bad-ink:#FFFFFF; --bad-soft:#3A1F1C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1620; --grid:#1A2432; --surface:#18212E; --surface-2:#212C3C;
+  --ink:#E8EEF7; --ink-2:#AAB8CD; --ink-3:#77869E;
+  --line:#2A3646; --line-strong:#3A4859;
+  --accent:#8AB0E4; --accent-ink:#0F1620; --accent-soft:#22314A;
+  --good:#3E9E7A; --good-ink:#FFFFFF; --good-soft:#16302A;
+  --warn:#E0A44A; --warn-soft:#33280F;
+  --bad:#C8544A; --bad-ink:#FFFFFF; --bad-soft:#3A1F1C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.7);
+}
+
+/* Inhaltsboxen bleiben immer hell — die Kartenfläche mit Klasse, Datum und Namen,
+   die laufende Abfrage, Eintragslisten, Kennzahlen, Klapptexte und Dialoge.
+   Sie setzen die Farbtoken für alles zurück, was in ihnen steht. */
+.card, .run, .entries, .stat, details.help, dialog{
+  --surface:#FFFFFF; --surface-2:#EFF3F9;
+  --ink:#16233B; --ink-2:#4C5C78; --ink-3:#8593AC;
+  --line:#DCE3EC; --line-strong:#C0CAD9;
+  --accent:#2B4C7E; --accent-ink:#FFFFFF; --accent-soft:#E1EAF7;
+  --good:#1C7A5B; --good-ink:#FFFFFF; --good-soft:#E2F2EB;
+  --warn:#A9660A; --warn-soft:#F8EEDD;
+  --bad:#B23A2E; --bad-ink:#FFFFFF; --bad-soft:#F9E7E4;
+  color:var(--ink);
+  background:var(--surface);
+  /* damit auch native Bedienelemente (Datumsauswahl, Zahlenfelder) hell bleiben */
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size:16px; line-height:1.45;
+  background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:26px 26px;
+  -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+  /* Feste Rahmenhöhe: Kopf und Navigation stehen still, nur der Inhalt scrollt. */
+  height:100vh; height:100dvh; overflow:hidden;
+  display:flex; flex-direction:column;
+}
+.app{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px 26px}
+.inner{max-width:600px; margin:0 auto}
+
+header.top{
+  flex:0 0 auto; z-index:20; padding:8px 16px;
+  background:var(--surface); border-bottom:1px solid var(--line);
+}
+header.top .hw{
+  max-width:600px; margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.brand{font-family:"Bricolage Grotesque", ui-sans-serif, sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em}
+.brand span{color:var(--accent)}
+.today{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; text-align:right; line-height:1.35}
+
+h2.vt{font-family:"Bricolage Grotesque", ui-sans-serif, sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em; margin:12px 0 10px; text-wrap:balance; text-align:right}
+p.vs{margin:0 0 16px; color:var(--ink-2); font-size:14.5px; max-width:60ch}
+
+.label{display:block; font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin:0 0 6px}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px; box-shadow:var(--shadow)}
+.stack{display:flex; flex-direction:column; gap:14px}
+.row{display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap}
+
+input[type=text], input[type=number], input[type=date], select, textarea{
+  width:100%; max-width:100%; font:inherit; font-size:16px; color:var(--ink); background:var(--surface);
+  border:1px solid var(--line-strong); border-radius:10px; padding:10px 11px; min-height:48px; line-height:1.2;
+}
+input[type=date]{
+  -webkit-appearance:none; appearance:none; min-width:0;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums;
+  /* Datum mittig im Feld — waagerecht wie senkrecht */
+  display:flex; align-items:center; justify-content:center; text-align:center; padding:0 8px;
+}
+input[type=date]::-webkit-date-and-time-value{text-align:center; margin:0}
+input[type=date]::-webkit-calendar-picker-indicator{margin:0 0 0 6px; padding:0; opacity:.5}
+textarea{min-height:120px; resize:vertical; line-height:1.5}
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+input[type=number]{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums}
+select{-webkit-appearance:none; appearance:none; background-image:none}
+
+.chips{display:flex; gap:8px; overflow-x:auto; padding:2px 0 4px; scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-2);
+  border-radius:999px; padding:8px 14px; font-size:14.5px; font-weight:600; cursor:pointer; min-height:40px;
+}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+
+.names{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:8px}
+.tile{display:flex; align-items:stretch; border:1px solid var(--line-strong); background:var(--surface); border-radius:10px; overflow:hidden; min-height:48px}
+.tile[data-on="1"]{background:var(--accent-soft); border-color:var(--accent)}
+.tile .pick{
+  flex:1 1 auto; min-width:0; text-align:left; border:0; background:transparent; color:var(--ink);
+  font:inherit; font-size:15px; padding:10px 11px; cursor:pointer;
+  display:flex; align-items:center; gap:7px; justify-content:space-between;
+}
+.tile[data-on="1"] .pick{font-weight:600}
+.tile .pick .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tile .prog{font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:0 0 auto}
+.tile .prog.full{color:var(--good); font-weight:600}
+.tile .prog.some{color:var(--warn); font-weight:600}
+.tile .prog.hot{color:var(--bad); font-weight:600}
+/* vergessene Hausaufgaben: ab 2 gelb, ab 3 rot — nur die Zahl wird eingefärbt,
+   ohne Hintergrund und ohne zusätzlichen Abstand */
+.tile .prog b{font-weight:600}
+.tile .prog b.some{color:#C79100}
+.tile .prog b.hot{color:#C0281C}
+
+button{font-family:inherit}
+.btn{border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); border-radius:10px; padding:12px 16px; font-size:15.5px; font-weight:600; cursor:pointer; min-height:48px}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.wide{width:100%}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad); border-color:color-mix(in srgb, var(--bad) 40%, var(--line))}
+.btn[disabled]{opacity:.45; cursor:not-allowed}
+.btn.sm{padding:7px 11px; min-height:36px; font-size:13.5px}
+
+/* ===== Abfrage-Modus ===== */
+.run{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden}
+.runTop{display:flex; align-items:center; gap:10px; padding:11px 13px; border-bottom:1px solid var(--line); background:var(--surface-2)}
+.runTop .live{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--bad); flex:0 0 auto}
+.runTop .live i{width:8px; height:8px; border-radius:50%; background:var(--bad); display:block; animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){ .runTop .live i{animation:none} }
+.runTop .meta{flex:1; min-width:0; font-size:13px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.runTop .end{flex:0 0 auto; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:7px 11px; font-size:13.5px; font-weight:600; cursor:pointer; min-height:38px}
+
+.cands{display:flex; gap:7px; padding:11px 13px; border-bottom:1px solid var(--line)}
+.cand{
+  flex:1 1 0; min-width:0; border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-2);
+  border-radius:10px; padding:8px 5px; cursor:pointer; text-align:center; min-height:56px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+}
+.cand[aria-current="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.cand[data-done="1"]:not([aria-current="true"]){background:var(--good-soft); border-color:var(--good)}
+.cand .cn{font-size:13.5px; font-weight:600; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cand .cc{font-family:"IBM Plex Mono", monospace; font-size:11.5px; font-variant-numeric:tabular-nums; opacity:.85}
+.cand.add{border-style:dashed; color:var(--ink-3); font-size:22px; flex:0 0 48px; font-weight:400}
+
+.stage{padding:16px 13px 4px; text-align:center}
+.stage .who{font-family:"Bricolage Grotesque", sans-serif; font-weight:700; font-size:26px; letter-spacing:-.02em; line-height:1.15}
+.stage .pos{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-2); margin-top:3px; font-variant-numeric:tabular-nums}
+.dots{display:flex; gap:8px; justify-content:center; margin:13px 0 4px}
+.dots i{width:16px; height:16px; border-radius:50%; border:2px solid var(--line-strong); display:block}
+.dots i.ok{background:var(--good); border-color:var(--good)}
+.dots i.no{background:var(--bad); border-color:var(--bad)}
+.dots i.now{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+
+.answers{display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 13px 10px}
+.ans{
+  border:0; border-radius:12px; padding:20px 10px; font-size:19px; font-weight:700; cursor:pointer;
+  min-height:76px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  transition:transform .08s ease;
+}
+.ans:active{transform:scale(.97)}
+@media (prefers-reduced-motion: reduce){ .ans{transition:none} }
+.ans small{font-size:12px; font-weight:600; opacity:.85; letter-spacing:.03em}
+.ans.no{background:var(--bad); color:var(--bad-ink)}
+.ans.ok{background:var(--good); color:var(--good-ink)}
+.ans .gl{font-size:26px; line-height:1}
+.runFoot{display:flex; gap:10px; padding:0 13px 13px}
+.runFoot button{flex:1}
+
+.gradeMeta{font-family:"IBM Plex Mono", monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.g1,.g2{color:var(--good)} .g3,.g4{color:var(--warn)} .g5,.g6{color:var(--bad)}
+.gradeBox{display:flex; align-items:center; gap:13px; padding:12px 14px; border-radius:var(--r); background:var(--surface-2); border:1px solid var(--line)}
+.gradeNum{font-family:"Bricolage Grotesque", sans-serif; font-weight:700; font-size:32px; line-height:1; min-width:42px; text-align:center; font-variant-numeric:tabular-nums}
+.gradeNum.prov{opacity:.55}
+
+.entries{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); overflow:hidden}
+.entry{display:flex; align-items:center; gap:10px; padding:11px 13px; border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.entry .who{font-weight:600; font-size:15px}
+.entry .det{font-size:13px; color:var(--ink-2)}
+.entry .grow{flex:1; min-width:0}
+.entry .val{font-family:"IBM Plex Mono", monospace; font-size:14px; font-variant-numeric:tabular-nums; font-weight:600; flex:0 0 auto}
+.entry .x{border:0; background:transparent; color:var(--ink-3); font-size:20px; line-height:1; padding:4px 7px; cursor:pointer; border-radius:8px; flex:0 0 auto}
+.entry .x:hover{color:var(--bad); background:var(--bad-soft)}
+.stripe{width:3px; align-self:stretch; border-radius:2px; background:var(--accent); flex:0 0 auto}
+.stripe.bad{background:var(--bad)}
+.empty{padding:18px 14px; color:var(--ink-3); font-size:14.5px; font-style:italic; text-align:center}
+
+.tag{display:inline-flex; align-items:center; font-size:11.5px; font-weight:600; letter-spacing:.04em; padding:3px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-2); text-transform:uppercase}
+.tag.demo{background:var(--warn-soft); color:var(--warn)}
+
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.stat{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px}
+.stat b{display:block; font-family:"IBM Plex Mono", monospace; font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.stat span{font-size:12px; color:var(--ink-3)}
+
+details.help{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); overflow:hidden}
+details.help summary{padding:13px 14px; cursor:pointer; font-weight:600; font-size:15px; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:10px}
+details.help summary::-webkit-details-marker{display:none}
+details.help summary::after{content:"+"; font-family:"IBM Plex Mono",monospace; color:var(--ink-3); font-size:18px}
+details.help[open] summary::after{content:"–"}
+details.help .body{padding:12px 14px 14px; font-size:14.5px; color:var(--ink-2); border-top:1px solid var(--line); display:flex; flex-direction:column; gap:12px}
+details.help .body > p:first-child{margin-top:0}
+details.help .body p{margin:0}
+details.help .body ol{margin:0; padding-left:20px} details.help .body li{margin-bottom:7px}
+details.help .body code{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+
+nav.tabs{
+  flex:0 0 auto; z-index:30;
+  display:grid; grid-template-columns:repeat(4,1fr);
+  background:var(--surface);
+  border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom);
+}
+nav.tabs button{
+  border:0; background:transparent; color:var(--ink-3); padding:9px 4px 11px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11.5px; font-weight:600;
+  border-top:2px solid transparent; margin-top:-1px; position:relative;
+}
+nav.tabs button svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+nav.tabs button[aria-current="true"]{color:var(--accent); border-top-color:var(--accent)}
+nav.tabs button .dot{position:absolute; top:7px; right:calc(50% - 20px); width:8px; height:8px; border-radius:50%; background:var(--bad); display:none}
+nav.tabs button.running .dot{display:block}
+
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:calc(92px + env(safe-area-inset-bottom));
+  background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:999px; font-size:14.5px; font-weight:600;
+  z-index:60; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease;
+  max-width:88vw; text-align:center;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-4px)}
+@media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+
+dialog{border:0; border-radius:14px; padding:0; background:var(--surface); color:var(--ink); max-width:min(560px, 94vw); width:100%; box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,16,26,.55)}
+dialog .dh{padding:14px 16px; border-bottom:1px solid var(--line)}
+dialog .dh .t{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:18px; letter-spacing:-.01em}
+dialog .dh .s{font-size:13px; color:var(--ink-2)}
+dialog .db{padding:14px 16px; display:flex; flex-direction:column; gap:12px; max-height:64vh; overflow-y:auto}
+dialog .df{padding:12px 16px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap}
+/* Klassenkacheln: eingeklappt nur Name und Anzahl, aufgeklappt die Namen */
+.klCard{padding:0; overflow:hidden}
+.klHead{
+  width:100%; display:flex; align-items:center; gap:10px; padding:12px 14px;
+  border:0; background:transparent; font:inherit; text-align:left; cursor:pointer; min-height:52px;
+}
+.klChev{flex:0 0 12px; color:var(--ink-3); font-size:12px; line-height:1}
+.klName{flex:1 1 auto; min-width:0; font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:17px; color:var(--ink)}
+.klCnt{flex:0 0 auto; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.klBody{padding:12px 14px 14px; border-top:1px solid var(--line)}
+.klActions{display:flex; gap:8px; margin-top:12px}
+/* kein Fokusrahmen auf dem Inhaltsbereich des Verlaufs */
+#dlgHistBody:focus{outline:none}
+.mono-out{font-family:"IBM Plex Mono",monospace; font-size:12px; white-space:pre; overflow:auto; max-height:40vh; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:10px}
+
+.termHead{display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--line); border-radius:10px 10px 0 0; border-bottom:0}
+.termHead .tn{font-weight:600; font-size:14.5px; flex:1; min-width:0}
+.termHead .tg{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:22px; line-height:1; font-variant-numeric:tabular-nums}
+.termHead .tg.prov{opacity:.55}
+.termWrap{margin-bottom:14px}
+.termWrap .entries{border-radius:0 0 10px 10px}
+.hstatus{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3)}
+hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
+.hidden{display:none !important}
+.scaleRow{display:grid; grid-template-columns:repeat(5,1fr); gap:7px}
+.scaleRow label{font-size:11px; color:var(--ink-3); font-weight:600; display:block; text-align:center; margin-bottom:3px}
+.scaleRow input{padding:8px 4px; text-align:center; min-height:44px}
+.f2{flex:1 1 200px; min-width:0} .f1{flex:1 1 170px; min-width:0}
+
+/* Datumszeile: alle Elemente so hoch wie die Klassen-Chips (40px).
+   Datum und „Heute" rechteckig, die Tagesschritte rund. */
+.dateRow{display:flex; gap:8px; align-items:center}
+.dateRow input[type=date]{
+  flex:1 1 auto; min-width:0;
+  height:40px; min-height:40px; border-radius:0; padding:0 8px;
+}
+.dnav{
+  flex:0 0 40px; width:40px; height:40px; min-height:40px; padding:0;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-2);
+  border-radius:50%; font-size:19px; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.dnav:hover{background:var(--surface-2); color:var(--ink)}
+.dtoday{
+  flex:0 0 auto; height:40px; min-height:40px; border-radius:0; padding:0 14px;
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink);
+  font-size:14.5px; font-weight:600; cursor:pointer;
+}
+.dtoday:hover{background:var(--surface-2)}
+.dtoday[disabled]{opacity:.4; cursor:default}
+.lblDay{text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink-2)}
+</style>
+
+<header class="top">
+  <div class="hw">
+    <div class="brand">Klassen<span>journal</span></div>
+    <div class="today" id="todayLbl"></div>
+  </div>
+</header>
+
+<div class="app"><div class="inner">
+
+  <!-- ===== VOKABELN ===== -->
+  <section id="v-vokabel">
+    <h2 class="vt" id="vk-title">Vokabelabfrage</h2>
+
+    <!-- Vorbereitung -->
+    <div class="stack" id="vk-setup">
+      <div class="card stack">
+        <div>
+          <span class="label">Datum <span class="lblDay" id="vk-weekday"></span></span>
+          <div class="dateRow">
+            <button class="dnav" type="button" id="vk-prev" aria-label="Ein Tag zurück">‹</button>
+            <input type="date" id="vk-date">
+            <button class="dnav" type="button" id="vk-next" aria-label="Ein Tag vor">›</button>
+            <button class="dtoday" type="button" id="vk-today">Heute</button>
+          </div>
+        </div>
+        <div>
+          <span class="label">Klasse &amp; Schüler</span>
+          <div class="chips" id="vk-classes"></div>
+          <div class="names" id="vk-students" style="margin-top:9px"></div>
+        </div>
+        <div>
+          <span class="label">Lektion / Vokabelsatz</span>
+          <input type="text" id="vk-lesson" placeholder="z. B. Unit 4 – Irregular verbs" autocomplete="off">
+        </div>
+        <button class="btn primary wide" id="vk-start">Abfrage starten</button>
+      </div>
+
+      <details class="help">
+        <summary>Ergebnis nachträglich eintragen</summary>
+        <div class="body">
+          <p>Für Nachschreiber oder Korrekturen: Schüler oben auswählen, Anzahl richtiger Vokabeln setzen, eintragen — ohne Live-Abfrage.</p>
+          <div class="row">
+            <div class="f1">
+              <span class="label">Richtige Vokabeln</span>
+              <input type="number" id="mn-points" min="0" value="5" inputmode="numeric">
+            </div>
+            <div class="f1">
+              <span class="label">von</span>
+              <input type="number" id="mn-max" min="1" value="6" inputmode="numeric">
+            </div>
+          </div>
+          <button class="btn wide" id="mn-save">Eintragen</button>
+        </div>
+      </details>
+
+      <div>
+        <span class="label">Einträge am gewählten Tag</span>
+        <div class="entries" id="vk-list"></div>
+      </div>
+    </div>
+
+    <!-- Laufende Abfrage -->
+    <div class="run hidden" id="vk-run">
+      <div class="runTop">
+        <span class="live"><i></i>läuft</span>
+        <div class="meta" id="run-meta">–</div>
+        <button class="end" type="button" id="run-end">Beenden</button>
+      </div>
+      <div class="cands" id="run-cands"></div>
+      <div class="stage">
+        <div class="who" id="run-who">–</div>
+        <div class="pos" id="run-pos">–</div>
+        <div class="dots" id="run-dots"></div>
+      </div>
+      <div class="answers" id="run-answers">
+        <button class="ans no" type="button" id="run-no"><span class="gl">✗</span>falsch</button>
+        <button class="ans ok" type="button" id="run-ok"><span class="gl">✓</span>richtig</button>
+      </div>
+      <div class="runFoot">
+        <button class="btn ghost" type="button" id="run-undo">Rückgängig</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HAUSAUFGABEN ===== -->
+  <section id="v-hausaufgaben" class="hidden">
+    <h2 class="vt">Vergessene Hausaufgaben</h2>
+    <div class="stack">
+      <div class="card stack">
+        <div>
+          <span class="label">Datum <span class="lblDay" id="ha-weekday"></span></span>
+          <div class="dateRow">
+            <button class="dnav" type="button" id="ha-prev" aria-label="Ein Tag zurück">‹</button>
+            <input type="date" id="ha-date">
+            <button class="dnav" type="button" id="ha-next" aria-label="Ein Tag vor">›</button>
+            <button class="dtoday" type="button" id="ha-today">Heute</button>
+          </div>
+        </div>
+        <div>
+          <span class="label">Klasse &amp; Schüler</span>
+          <div class="chips" id="ha-classes"></div>
+          <div class="names" id="ha-students" style="margin-top:9px"></div>
+        </div>
+        <div>
+          <span class="label">Notiz (optional)</span>
+          <input type="text" id="ha-note" placeholder="z. B. Heft vergessen, Aufgabe nachgereicht" autocomplete="off">
+        </div>
+        <button class="btn primary wide" id="ha-save">0 Einträge speichern</button>
+      </div>
+      <div>
+        <span class="label">Einträge am gewählten Tag</span>
+        <div class="entries" id="ha-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== KLASSEN ===== -->
+  <section id="v-klassen" class="hidden">
+    <h2 class="vt">Klassenlisten</h2>
+    <div class="stack" id="kl-list"></div>
+    <div class="stack" style="margin-top:14px">
+      <button class="btn wide" id="kl-add">Klasse anlegen</button>
+    </div>
+  </section>
+
+  <!-- ===== EXPORT ===== -->
+  <section id="v-export" class="hidden">
+    <h2 class="vt">Tagesexport</h2>
+    <div class="stack">
+      <div class="stats">
+        <div class="stat"><b id="st-v">0</b><span>Abfragen</span></div>
+        <div class="stat"><b id="st-h">0</b><span>vergessene HA</span></div>
+        <div class="stat"><b id="st-s">0</b><span>Schüler</span></div>
+      </div>
+      <button class="btn primary wide" id="ex-xlsx">Excel-Datei erzeugen &amp; teilen</button>
+      <button class="btn wide" id="ex-csv">Stattdessen als CSV kopieren</button>
+      <div class="card">
+        <span class="label">Letzter Export</span>
+        <div class="gradeMeta" id="ex-last">noch nie</div>
+      </div>
+
+      <details class="help">
+        <summary>Täglich automatisch nach OneDrive</summary>
+        <div class="body">
+          <p>Eine Web-App auf dem iPhone darf im Hintergrund nichts hochladen — das lässt iOS nicht zu. Der verlässliche Weg ist eine Erinnerung plus zwei Taps:</p>
+          <ol>
+            <li>Kurzbefehle-App → <b>Automation</b> → <b>Tageszeit</b>, z. B. werktags 16:30.</li>
+            <li>Aktion <b>„URL öffnen“</b> mit der Adresse dieser App, <b>„Sofort ausführen“</b> aktivieren.</li>
+            <li>App öffnet sich → <b>Excel-Datei erzeugen &amp; teilen</b> → <b>In Dateien sichern</b> → OneDrive-Ordner → vorhandene Datei ersetzen.</li>
+          </ol>
+          <p>Der Export enthält immer den kompletten Datenbestand. Überschreiben ist deshalb richtig und kann nichts verlieren.</p>
+        </div>
+      </details>
+
+      <details class="help">
+        <summary>Vollautomatisch ohne Tippen</summary>
+        <div class="body">
+          <p>Ohne Handgriff geht es nur über die Microsoft-Graph-API: App-Registrierung in Entra ID, Anmeldung per MSAL in der Web-App, Upload per <code>PUT /me/drive/items/…/content</code>. Danach genügt ein Öffnen der App, der Rest läuft von selbst.</p>
+          <p>Das braucht Rechte in eurem Tenant und eine Freigabe für personenbezogene Schülerdaten.</p>
+        </div>
+      </details>
+
+      <hr class="sep">
+
+      <div class="card stack">
+        <div>
+          <span class="label">Notenschlüssel — ab wie viel Prozent?</span>
+          <div class="scaleRow">
+            <div><label for="sc1">Note 1</label><input type="number" id="sc1" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc2">Note 2</label><input type="number" id="sc2" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc3">Note 3</label><input type="number" id="sc3" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc4">Note 4</label><input type="number" id="sc4" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc5">Note 5</label><input type="number" id="sc5" min="0" max="100" inputmode="numeric"></div>
+          </div>
+          <p class="gradeMeta" id="sc-preview" style="margin:8px 0 0"></p>
+        </div>
+        <div class="row">
+          <div class="f1">
+            <span class="label">Vokabeln je Abfrage</span>
+            <input type="number" id="set-size" min="1" max="50" inputmode="numeric">
+          </div>
+          <div class="f1">
+            <span class="label">Abfragen je Halbjahr</span>
+            <input type="number" id="set-runs" min="1" max="10" inputmode="numeric">
+          </div>
+        </div>
+        <div class="row">
+          <div class="f1">
+            <span class="label">Schüler gleichzeitig</span>
+            <input type="number" id="set-seats" min="1" max="8" inputmode="numeric">
+          </div>
+          <div class="f1">
+            <span class="label">2. Halbjahr beginnt im</span>
+            <select id="set-hj2">
+              <option value="1">Januar</option>
+              <option value="2">Februar</option>
+              <option value="3">März</option>
+            </select>
+          </div>
+        </div>
+        <p class="gradeMeta" style="margin:0">Aktuelles Halbjahr: <span id="set-termnow"></span></p>
+      </div>
+
+      <details class="help">
+        <summary>Daten &amp; Datenschutz</summary>
+        <div class="body">
+          <p>Alle Einträge liegen ausschließlich im Speicher dieses Browsers auf diesem Gerät. Sie gehen nirgendwo hin, außer du erzeugst den Export. Löschst du die Browserdaten oder wechselst das Gerät, sind sie weg — deshalb regelmäßig exportieren.</p>
+          <p>Klarnamen plus Leistungsdaten sind personenbezogene Daten nach Art. 4 DSGVO. Vor dem Ablegen in OneDrive/SharePoint gehört das mit Schulleitung bzw. schulischem Datenschutzbeauftragten abgeklärt — dienstlicher Tenant statt privatem Konto.</p>
+        </div>
+      </details>
+
+      <button class="btn danger wide" id="ex-wipe">Alle Daten löschen</button>
+    </div>
+  </section>
+
+</div></div>
+
+<nav class="tabs" id="tabs">
+  <button data-view="vokabel" aria-current="true">
+    <span class="dot"></span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M8 4v16"/><path d="M11.5 9.5h4"/><path d="M11.5 13.5h4"/></svg>
+    Vokabeln
+  </button>
+  <button data-view="hausaufgaben">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9.5 12.5l1.8 1.8 3.4-3.4"/><path d="M9.5 17h5"/></svg>
+    Hausaufgaben
+  </button>
+  <button data-view="klassen">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17.5" cy="9.5" r="2.2"/><path d="M15 18.5a4.6 4.6 0 0 1 5.8-3"/></svg>
+    Klassen
+  </button>
+  <button data-view="export">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5L12 4l3.5 3.5"/><path d="M4.5 14v4.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+    Export
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlgAdd">
+  <div class="dh"><div class="t">Kandidat aufnehmen</div><div class="s" id="dlgAddSub">–</div></div>
+  <div class="db"><div class="names" id="dlgAddList"></div></div>
+  <div class="df"><button class="btn ghost" id="dlgAddClose">Abbrechen</button></div>
+</dialog>
+
+<dialog id="dlgEnd">
+  <div class="dh"><div class="t">Abfrage beenden</div><div class="s" id="dlgEndSub">–</div></div>
+  <div class="db" id="dlgEndBody"></div>
+  <div class="df">
+    <button class="btn ghost" id="dlgEndBack">Weiter abfragen</button>
+    <button class="btn danger" id="dlgEndDrop">Verwerfen</button>
+    <button class="btn primary" id="dlgEndSave">Speichern</button>
+  </div>
+</dialog>
+
+<dialog id="dlgClass">
+  <div class="dh"><div class="t" id="dlgClassTitle">Klasse bearbeiten</div></div>
+  <div class="db">
+    <div>
+      <span class="label">Bezeichnung</span>
+      <input type="text" id="dlgClassName" placeholder="z. B. 7b Englisch">
+    </div>
+    <div>
+      <span class="label">Schüler — ein Name pro Zeile</span>
+      <textarea id="dlgClassStudents" placeholder="Amelie Brandt&#10;Jonas Deger&#10;…"></textarea>
+    </div>
+  </div>
+  <div class="df">
+    <button class="btn ghost" id="dlgClassCancel">Abbrechen</button>
+    <button class="btn primary" id="dlgClassSave">Speichern</button>
+  </div>
+</dialog>
+
+<dialog id="dlgAsk">
+  <div class="dh"><div class="t" id="askT">–</div></div>
+  <div class="db"><p id="askM" style="margin:0; font-size:15px; color:var(--ink-2)">–</p></div>
+  <div class="df">
+    <button class="btn ghost" id="askNo">Abbrechen</button>
+    <button class="btn primary" id="askYes">OK</button>
+  </div>
+</dialog>
+
+<dialog id="dlgHist">
+  <div class="dh"><div class="t" id="dlgHistName">–</div><div class="s" id="dlgHistSub">–</div></div>
+  <div class="db" id="dlgHistBody" tabindex="-1"></div>
+  <div class="df"><button class="btn primary" id="dlgHistClose">Schließen</button></div>
+</dialog>
+
+<dialog id="dlgOut">
+  <div class="dh"><div class="t">Export als CSV</div></div>
+  <div class="db">
+    <p style="margin:0; font-size:14.5px; color:var(--ink-2)">Text markieren und kopieren, oder den Kopieren-Knopf nutzen.</p>
+    <div class="mono-out" id="dlgOutText"></div>
+  </div>
+  <div class="df">
+    <button class="btn ghost" id="dlgOutClose">Schließen</button>
+    <button class="btn primary" id="dlgOutCopy">Kopieren</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+"use strict";
+var KEY = "klassenjournal.v1";
+
+var $ = function(id){ return document.getElementById(id); };
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function iso(d){
+  var x = d || new Date();
+  return x.getFullYear() + "-" + String(x.getMonth()+1).padStart(2,"0") + "-" + String(x.getDate()).padStart(2,"0");
+}
+function deDate(s){ var p = String(s).split("-"); return p.length===3 ? p[2]+"."+p[1]+"."+p[0] : s; }
+function shiftDate(id, delta){
+  var el = $(id), p = String(el.value).split("-");
+  if (p.length !== 3){ el.value = iso(); return; }
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  d.setDate(d.getDate() + delta);
+  el.value = iso(d);
+}
+function paintDateRow(dateId, dayId, todayId){
+  var v = $(dateId).value, p = String(v).split("-"), lbl = "";
+  if (p.length === 3){
+    lbl = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("de-DE", { weekday:"long" });
+    if (v === iso()) lbl += " · heute";
+  }
+  $(dayId).textContent = lbl ? "· " + lbl : "";
+  /* „Heute" bleibt stehen und wird nur inaktiv — sonst würden die Pfeile springen */
+  $(todayId).disabled = (v === iso());
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function first(n){ return String(n).split(" ")[0]; }
+function byName(a,b){ return a.name.localeCompare(b.name, "de", { sensitivity:"base" }); }
+/* Klassen heißen nach Konvention „7a …" — erst nach Jahrgangszahl, dann nach Buchstabe.
+   Namen ohne führende Zahl landen alphabetisch dahinter. */
+function byClass(a,b){
+  var ra = /^\s*(\d+)\s*([^\s]*)/.exec(a.name), rb = /^\s*(\d+)\s*([^\s]*)/.exec(b.name);
+  if (ra && rb){
+    var d = (+ra[1]) - (+rb[1]);
+    if (d) return d;
+    var l = (ra[2] || "").localeCompare(rb[2] || "", "de", { sensitivity:"base" });
+    if (l) return l;
+    return byName(a, b);
+  }
+  if (ra) return -1;
+  if (rb) return 1;
+  return byName(a, b);
+}
+/* Eigener Rückfrage-Dialog. Das eingebaute confirm() ist in eingebetteten Ansichten
+   gesperrt und liefert dort kommentarlos „nein" — Löschen und Verwerfen blieben wirkungslos. */
+var askResolve = null;
+function ask(title, msg, okLabel, danger){
+  return new Promise(function(res){
+    $("askT").textContent = title;
+    $("askM").textContent = msg;
+    var y = $("askYes");
+    y.textContent = okLabel || "OK";
+    y.className = "btn " + (danger ? "danger" : "primary");
+    askResolve = res;
+    $("dlgAsk").showModal();
+  });
+}
+function askDone(v){
+  $("dlgAsk").close();
+  var r = askResolve; askResolve = null;
+  if (r) r(v);
+}
+var toastTimer = null;
+function toast(msg){
+  var t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2400);
+}
+
+/* ---------- Zustand ---------- */
+function defaults(){
+  return { scale:[92,81,67,50,30], setSize:6, setRuns:2, seats:4, hj2Start:2, lastExport:null };
+}
+function seed(){
+  var names = "Amelie Brandt,Jonas Deger,Merve Kaya,Noah Riedl,Pia Sommer,Tarek Öz,Lena Vogt,Finn Wieland".split(",");
+  return {
+    settings: defaults(), session: null,
+    classes: [{ id:"demo-7b", name:"7b Englisch", demo:true,
+      students: names.map(function(n){ return { id:uid(), name:n }; }).sort(byName) }],
+    vocab: [], homework: []
+  };
+}
+var S = null;
+function load(){
+  try { var raw = localStorage.getItem(KEY); if (raw) S = JSON.parse(raw); } catch(e){ S = null; }
+  if (!S || !S.classes){
+    S = seed();
+    var c = S.classes[0], t = new Date();
+    S.vocab.push({ id:uid(), date:iso(t), classId:c.id, classSnap:c.name, studentId:c.students[0].id,
+      studentSnap:c.students[0].name, lesson:"Unit 4 – Irregular verbs", points:5, max:6,
+      note:"Beispieleintrag", ts:t.toISOString(), demo:true });
+    S.homework.push({ id:uid(), date:iso(t), classId:c.id, classSnap:c.name, studentId:c.students[3].id,
+      studentSnap:c.students[3].name, note:"Beispieleintrag", ts:t.toISOString(), demo:true });
+  }
+  var d = defaults();
+  if (!S.settings) S.settings = d;
+  Object.keys(d).forEach(function(k){ if (S.settings[k] === undefined || S.settings[k] === null) S.settings[k] = d[k]; });
+  if (!S.settings.scale || S.settings.scale.length !== 5) S.settings.scale = d.scale;
+  if (S.session === undefined) S.session = null;
+  S.classes.sort(byClass);
+  S.classes.forEach(function(c){ c.students.sort(byName); });
+  S.vocab.forEach(function(v){ if (!v.max) v.max = S.settings.setSize; });
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast("Speichern fehlgeschlagen — Speicher voll oder blockiert"); }
+}
+function cls(id){ for (var i=0;i<S.classes.length;i++) if (S.classes[i].id===id) return S.classes[i]; return null; }
+
+/* ---------- Halbjahre & Noten ---------- */
+function termOf(dateStr){
+  var p = String(dateStr).split("-");
+  if (p.length !== 3) return { key:"?", label:"unbekannt", half:0 };
+  var y = +p[0], m = +p[1], start = S.settings.hj2Start, sy, half;
+  if (m >= start && m <= 7){ sy = y - 1; half = 2; }
+  else if (m >= 8){ sy = y; half = 1; }
+  else { sy = y - 1; half = 1; }
+  return { key: sy + "-" + half, label: sy + "/" + String((sy + 1) % 100).padStart(2,"0") + " · " + half + ". HJ", half: half };
+}
+function gradeFor(pct){
+  var s = S.settings.scale;
+  if (pct >= s[0]) return 1; if (pct >= s[1]) return 2; if (pct >= s[2]) return 3;
+  if (pct >= s[3]) return 4; if (pct >= s[4]) return 5; return 6;
+}
+var GRADEWORD = {1:"sehr gut",2:"gut",3:"befriedigend",4:"ausreichend",5:"mangelhaft",6:"ungenügend"};
+function vocabIn(sid, termKey){
+  return S.vocab.filter(function(v){ return v.studentId === sid && termOf(v.date).key === termKey; })
+    .sort(function(a,b){ return a.date.localeCompare(b.date) || a.ts.localeCompare(b.ts); });
+}
+function hwIn(sid, termKey){
+  return S.homework.filter(function(h){ return h.studentId === sid && termOf(h.date).key === termKey; });
+}
+/* Ampel für vergessene Hausaufgaben: ab 2 gelb, ab 3 rot */
+function hwClass(n){ return n >= 3 ? "hot" : (n >= 2 ? "some" : ""); }
+/* Nach jeder Datenänderung alle Ansichten neu zeichnen — auch die gerade nicht sichtbaren,
+   sonst zeigt ein Reiter im Hintergrund noch alte Zahlen. */
+function refreshAll(){
+  renderVokabel();
+  renderHa();
+  renderClasses();
+  renderExport();
+}
+function termGrade(entries){
+  var need = S.settings.setRuns * S.settings.setSize, pts = 0, mx = 0;
+  entries.forEach(function(v){ pts += (+v.points || 0); mx += (+v.max || S.settings.setSize); });
+  var base = Math.max(mx, entries.length >= S.settings.setRuns ? mx : need);
+  var pct = base > 0 ? Math.round(pts / base * 1000) / 10 : 0;
+  return { points:pts, max:mx, base:base, runs:entries.length, pct:pct,
+           grade:gradeFor(pct), complete: entries.length >= S.settings.setRuns };
+}
+
+/* ---------- Navigation ---------- */
+/* Eine gemeinsame aktive Klasse für alle Reiter — sie bestimmt auch,
+   welche Kachel in den Klassenlisten aufgeklappt ist. */
+var sel = { cls:null, vkPicked:{}, haStudents:{} };
+function pickClass(id){
+  sel.cls = id; sel.vkPicked = {}; sel.haStudents = {}; klOpen = null;
+  renderVokabel(); renderHa(); renderClasses();
+}
+function switchView(name){
+  ["vokabel","hausaufgaben","klassen","export"].forEach(function(v){
+    $("v-"+v).classList.toggle("hidden", v !== name);
+  });
+  Array.prototype.forEach.call($("tabs").children, function(b){
+    b.setAttribute("aria-current", b.dataset.view === name ? "true" : "false");
+  });
+  /* Der Inhalt scrollt in einem eigenen Rahmen — window.scrollTo greift hier nicht. */
+  var app = document.querySelector(".app"); if (app) app.scrollTop = 0;
+  if (name === "export") renderExport();
+  if (name === "klassen") renderClasses();
+}
+$("tabs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-view]"); if (b) switchView(b.dataset.view);
+});
+
+function renderClassChips(host, active, onPick){
+  host.innerHTML = "";
+  if (!S.classes.length){
+    host.innerHTML = '<span style="color:var(--ink-3); font-size:14px; font-style:italic">Noch keine Klasse angelegt → Reiter „Klassen“</span>';
+    return;
+  }
+  S.classes.forEach(function(c){
+    var b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = c.name;
+    b.setAttribute("aria-pressed", c.id === active ? "true" : "false");
+    b.addEventListener("click", function(){ onPick(c.id); });
+    host.appendChild(b);
+  });
+}
+function studentTile(st, c, on, progHtml, onPick){
+  var wrap = document.createElement("div");
+  wrap.className = "tile"; wrap.setAttribute("data-on", on ? "1" : "0");
+  var pick = document.createElement("button");
+  pick.className = "pick"; pick.type = "button";
+  pick.setAttribute("aria-pressed", on ? "true" : "false");
+  pick.innerHTML = '<span class="nm">' + esc(st.name) + '</span>' + progHtml;
+  pick.addEventListener("click", onPick);
+  wrap.appendChild(pick);
+  return wrap;
+}
+
+/* ================= VOKABELN ================= */
+function running(){ return !!S.session; }
+
+function renderVokabel(){
+  var run = running();
+  $("vk-setup").classList.toggle("hidden", run);
+  $("vk-run").classList.toggle("hidden", !run);
+  $("vk-title").textContent = run ? "Abfrage läuft" : "Vokabelabfrage";
+  $("tabs").children[0].classList.toggle("running", run);
+  if (run){ renderRun(); return; }
+
+  renderClassChips($("vk-classes"), sel.cls, pickClass);
+  var c = cls(sel.cls), host = $("vk-students");
+  host.innerHTML = "";
+  var tk = termOf($("vk-date").value).key;
+  if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
+  else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
+  else c.students.forEach(function(st){
+    var n = vocabIn(st.id, tk).length, runs = S.settings.setRuns;
+    var kl = n >= runs ? "full" : (n > 0 ? "some" : "");
+    host.appendChild(studentTile(st, c, !!sel.vkPicked[st.id],
+      '<span class="prog ' + kl + '">' + n + "/" + runs + "</span>",
+      function(){
+        if (sel.vkPicked[st.id]) delete sel.vkPicked[st.id];
+        else {
+          if (Object.keys(sel.vkPicked).length >= S.settings.seats){
+            toast("Höchstens " + S.settings.seats + " Schüler gleichzeitig"); return;
+          }
+          sel.vkPicked[st.id] = true;
+        }
+        renderVokabel();
+      }));
+  });
+  var n = Object.keys(sel.vkPicked).length, btn = $("vk-start");
+  btn.textContent = n === 0 ? "Abfrage starten" :
+    (n === 1 ? "Abfrage starten — 1 Schüler" : "Abfrage starten — " + n + " Schüler");
+  btn.disabled = !c || n === 0;
+  $("mn-max").value = S.settings.setSize;
+  paintDateRow("vk-date", "vk-weekday", "vk-today");
+  renderVkList();
+}
+function renderVkList(){
+  var d = $("vk-date").value;
+  var rows = S.vocab.filter(function(v){ return v.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
+  var host = $("vk-list"); host.innerHTML = "";
+  if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
+  rows.forEach(function(v){
+    var el = document.createElement("div"); el.className = "entry";
+    el.innerHTML = '<div class="stripe"></div><div class="grow"><div class="who">' + esc(v.studentSnap) +
+      (v.demo ? ' <span class="tag demo">Beispiel</span>' : '') +
+      '</div><div class="det">' + esc(v.classSnap) + (v.lesson ? ' · ' + esc(v.lesson) : '') + '</div></div>' +
+      '<div class="val">' + v.points + '/' + v.max + '</div>' +
+      '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+    el.querySelector(".x").addEventListener("click", function(){
+      S.vocab = S.vocab.filter(function(x){ return x.id !== v.id; }); save(); refreshAll(); toast("Eintrag gelöscht");
+    });
+    host.appendChild(el);
+  });
+}
+$("vk-date").addEventListener("change", renderVokabel);
+$("vk-prev").addEventListener("click", function(){ shiftDate("vk-date", -1); renderVokabel(); });
+$("vk-next").addEventListener("click", function(){ shiftDate("vk-date", 1); renderVokabel(); });
+$("vk-today").addEventListener("click", function(){ $("vk-date").value = iso(); renderVokabel(); });
+
+/* ---- Abfrage starten ---- */
+$("vk-start").addEventListener("click", async function(){
+  var c = cls(sel.cls); if (!c) return;
+  var ids = Object.keys(sel.vkPicked); if (!ids.length) return;
+  var d = $("vk-date").value, tk = termOf(d).key;
+  var over = [];
+  var cands = c.students.filter(function(st){ return sel.vkPicked[st.id]; }).map(function(st){
+    if (vocabIn(st.id, tk).length >= S.settings.setRuns) over.push(st.name);
+    return { sid:st.id, name:st.name, answers:[] };
+  });
+  if (over.length){
+    var go = await ask("Schon abgefragt",
+      over.join(", ") + (over.length === 1 ? " hat" : " haben") + " im Halbjahr bereits " +
+      S.settings.setRuns + " Abfragen. Die Note ergibt sich dann aus allen Abfragen zusammen.",
+      "Trotzdem starten");
+    if (!go) return;
+  }
+  S.session = { classId:c.id, classSnap:c.name, date:d, lesson:$("vk-lesson").value.trim(),
+    cands:cands, active:0, history:[], startedTs:new Date().toISOString() };
+  save();
+  renderVokabel();
+});
+
+/* ---- laufende Abfrage ---- */
+function allDone(){
+  return S.session.cands.every(function(k){ return k.answers.length >= S.settings.setSize; });
+}
+function renderRun(){
+  var s = S.session, size = S.settings.setSize;
+  $("run-meta").textContent = (s.lesson ? s.lesson + " · " : "") + s.classSnap + " · " + deDate(s.date);
+
+  var host = $("run-cands"); host.innerHTML = "";
+  s.cands.forEach(function(k, i){
+    var b = document.createElement("button");
+    b.className = "cand"; b.type = "button";
+    b.setAttribute("aria-current", i === s.active ? "true" : "false");
+    b.setAttribute("data-done", k.answers.length >= size ? "1" : "0");
+    b.title = k.name;
+    var right = k.answers.filter(Boolean).length;
+    b.innerHTML = '<span class="cn">' + esc(first(k.name)) + '</span>' +
+      '<span class="cc">' + right + "✓ " + k.answers.length + "/" + size + '</span>';
+    b.addEventListener("click", function(){ s.active = i; save(); renderRun(); });
+    host.appendChild(b);
+  });
+  if (s.cands.length < S.settings.seats){
+    var add = document.createElement("button");
+    add.className = "cand add"; add.type = "button";
+    add.setAttribute("aria-label", "Weiteren Schüler aufnehmen");
+    add.textContent = "+";
+    add.addEventListener("click", openAdd);
+    host.appendChild(add);
+  }
+
+  var a = s.cands[s.active], done = allDone();
+  $("run-who").textContent = a ? a.name : "–";
+  var dots = $("run-dots"); dots.innerHTML = "";
+  for (var i = 0; i < size; i++){
+    var el = document.createElement("i");
+    if (a && i < a.answers.length) el.className = a.answers[i] ? "ok" : "no";
+    else if (a && i === a.answers.length && !done) el.className = "now";
+    dots.appendChild(el);
+  }
+  if (done){
+    $("run-pos").textContent = "alle Kandidaten fertig";
+    $("run-answers").classList.add("hidden");
+  } else if (a && a.answers.length >= size){
+    $("run-pos").textContent = "fertig — oben nächsten Kandidaten antippen";
+    $("run-answers").classList.add("hidden");
+  } else {
+    $("run-pos").textContent = "Vokabel " + ((a ? a.answers.length : 0) + 1) + " von " + size +
+      " · " + (a ? a.answers.filter(Boolean).length : 0) + " richtig";
+    $("run-answers").classList.remove("hidden");
+  }
+
+  var foot = document.querySelector(".runFoot");
+  foot.innerHTML = "";
+  var undo = document.createElement("button");
+  undo.className = "btn ghost"; undo.type = "button"; undo.textContent = "Rückgängig";
+  undo.disabled = !s.history.length;
+  undo.addEventListener("click", undoAnswer);
+  foot.appendChild(undo);
+  if (done){
+    var fin = document.createElement("button");
+    fin.className = "btn primary"; fin.type = "button"; fin.textContent = "Abfrage abschließen";
+    fin.addEventListener("click", openEnd);
+    foot.appendChild(fin);
+  }
+}
+function logAnswer(ok){
+  var s = S.session; if (!s) return;
+  var a = s.cands[s.active];
+  if (!a || a.answers.length >= S.settings.setSize) return;
+  a.answers.push(!!ok);
+  s.history.push(s.active);
+  /* Kein automatischer Wechsel — der abgefragte Schüler bleibt aktiv,
+     bis du eine andere Kachel antippst. */
+  save();
+  renderRun();
+  if (allDone()) openEnd();
+}
+function undoAnswer(){
+  var s = S.session; if (!s || !s.history.length) return;
+  var i = s.history.pop();
+  s.cands[i].answers.pop();
+  s.active = i;
+  save(); renderRun();
+  toast("Letzte Antwort zurückgenommen");
+}
+$("run-ok").addEventListener("click", function(){ logAnswer(true); });
+$("run-no").addEventListener("click", function(){ logAnswer(false); });
+$("run-end").addEventListener("click", openEnd);
+
+/* ---- Kandidat aufnehmen ---- */
+function openAdd(){
+  var s = S.session, c = cls(s.classId);
+  if (!c){ toast("Klasse nicht mehr vorhanden"); return; }
+  var inRun = {}; s.cands.forEach(function(k){ inRun[k.sid] = true; });
+  var tk = termOf(s.date).key;
+  $("dlgAddSub").textContent = c.name + " · " + s.cands.length + " von " + S.settings.seats + " Plätzen belegt";
+  var host = $("dlgAddList"); host.innerHTML = "";
+  var free = c.students.filter(function(st){ return !inRun[st.id]; });
+  if (!free.length){ host.innerHTML = '<div class="empty">Alle Schüler dieser Klasse sind bereits dabei</div>'; }
+  free.forEach(function(st){
+    var n = vocabIn(st.id, tk).length;
+    var kl = n >= S.settings.setRuns ? "full" : (n > 0 ? "some" : "");
+    host.appendChild(studentTile(st, c, false,
+      '<span class="prog ' + kl + '">' + n + "/" + S.settings.setRuns + "</span>",
+      function(){
+        if (S.session.cands.length >= S.settings.seats){ toast("Alle Plätze belegt"); return; }
+        S.session.cands.push({ sid:st.id, name:st.name, answers:[] });
+        S.session.active = S.session.cands.length - 1;
+        save(); $("dlgAdd").close(); renderRun();
+        toast(st.name + " ist dabei");
+      }));
+  });
+  $("dlgAdd").showModal();
+}
+$("dlgAddClose").addEventListener("click", function(){ $("dlgAdd").close(); });
+
+/* ---- Abfrage beenden ---- */
+function openEnd(){
+  var s = S.session; if (!s) return;
+  var size = S.settings.setSize, tk = termOf(s.date).key;
+  var partial = s.cands.filter(function(k){ return k.answers.length > 0 && k.answers.length < size; }).length;
+  var empty = s.cands.filter(function(k){ return k.answers.length === 0; }).length;
+  $("dlgEndSub").textContent = (s.lesson ? s.lesson + " · " : "") + deDate(s.date) +
+    (partial ? " · " + partial + " unvollständig" : "") + (empty ? " · " + empty + " ohne Antwort" : "");
+  var body = $("dlgEndBody"); body.innerHTML = "";
+  s.cands.forEach(function(k){
+    var right = k.answers.filter(Boolean).length, asked = k.answers.length;
+    var box = document.createElement("div"); box.className = "gradeBox";
+    if (!asked){
+      box.innerHTML = '<div class="gradeNum">–</div><div style="min-width:0">' +
+        '<div style="font-weight:600; font-size:14.5px">' + esc(k.name) + '</div>' +
+        '<div class="gradeMeta">keine Antwort erfasst — wird nicht gespeichert</div></div>';
+    } else {
+      var t = termGrade(vocabIn(k.sid, tk).concat([{ points:right, max:asked }]));
+      box.innerHTML = '<div class="gradeNum g' + t.grade + (t.complete ? '' : ' prov') + '">' + t.grade + '</div>' +
+        '<div style="min-width:0"><div style="font-weight:600; font-size:14.5px">' + esc(k.name) + '</div>' +
+        '<div class="gradeMeta">' + right + "/" + asked + " richtig · Halbjahr " + t.points + "/" + t.base +
+        " · " + (t.complete ? GRADEWORD[t.grade] : "vorläufig, " + t.runs + " von " + S.settings.setRuns + " Abfragen") +
+        '</div></div>';
+    }
+    body.appendChild(box);
+  });
+  $("dlgEnd").showModal();
+}
+$("dlgEndBack").addEventListener("click", function(){ $("dlgEnd").close(); });
+$("dlgEndDrop").addEventListener("click", async function(){
+  var ok = await ask("Abfrage verwerfen",
+    "Die erfassten Antworten gehen verloren und werden nicht gespeichert.", "Verwerfen", true);
+  if (!ok) return;
+  S.session = null; save(); $("dlgEnd").close(); sel.vkPicked = {}; refreshAll();
+  toast("Abfrage verworfen");
+});
+$("dlgEndSave").addEventListener("click", function(){
+  var s = S.session; if (!s) return;
+  var now = new Date().toISOString(), n = 0;
+  s.cands.forEach(function(k){
+    var asked = k.answers.length; if (!asked) return;
+    S.vocab.push({ id:uid(), date:s.date, classId:s.classId, classSnap:s.classSnap, studentId:k.sid,
+      studentSnap:k.name, lesson:s.lesson, points:k.answers.filter(Boolean).length, max:asked,
+      note:(asked < S.settings.setSize ? "Teilabfrage über " + asked + " Vokabeln" : ""),
+      ts:now, live:true });
+    n++;
+  });
+  S.session = null; save(); $("dlgEnd").close();
+  sel.vkPicked = {}; $("vk-lesson").value = "";
+  refreshAll();
+  toast(n === 1 ? "1 Ergebnis gespeichert" : n + " Ergebnisse gespeichert");
+});
+
+/* ---- Nachträglich eintragen ---- */
+$("mn-save").addEventListener("click", function(){
+  var c = cls(sel.cls); if (!c){ toast("Klasse wählen"); return; }
+  var ids = Object.keys(sel.vkPicked);
+  if (ids.length !== 1){ toast("Genau einen Schüler auswählen"); return; }
+  var st = c.students.filter(function(x){ return x.id === ids[0]; })[0]; if (!st) return;
+  var pts = parseInt($("mn-points").value, 10), mx = parseInt($("mn-max").value, 10);
+  if (!isFinite(pts) || !isFinite(mx) || mx < 1 || pts < 0 || pts > mx){ toast("Punkte prüfen"); return; }
+  S.vocab.push({ id:uid(), date:$("vk-date").value, classId:c.id, classSnap:c.name, studentId:st.id,
+    studentSnap:st.name, lesson:$("vk-lesson").value.trim(), points:pts, max:mx,
+    note:"nachträglich eingetragen", ts:new Date().toISOString() });
+  save(); sel.vkPicked = {}; refreshAll();
+  toast(st.name + ": " + pts + "/" + mx + " eingetragen");
+});
+
+/* ================= HAUSAUFGABEN ================= */
+function renderHa(){
+  renderClassChips($("ha-classes"), sel.cls, pickClass);
+  var c = cls(sel.cls), host = $("ha-students");
+  host.innerHTML = "";
+  var tk = termOf($("ha-date").value).key;
+  if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
+  else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
+  else c.students.forEach(function(st){
+    var n = hwIn(st.id, tk).length;
+    host.appendChild(studentTile(st, c, !!sel.haStudents[st.id],
+      '<span class="prog"><b class="' + hwClass(n) + '">' + n + '</b>×</span>',
+      function(){
+        if (sel.haStudents[st.id]) delete sel.haStudents[st.id]; else sel.haStudents[st.id] = true;
+        renderHa();
+      }));
+  });
+  var n = Object.keys(sel.haStudents).length, btn = $("ha-save");
+  btn.textContent = n === 1 ? "1 Eintrag speichern" : n + " Einträge speichern";
+  btn.disabled = n === 0;
+  paintDateRow("ha-date", "ha-weekday", "ha-today");
+  renderHaList();
+}
+function renderHaList(){
+  var d = $("ha-date").value;
+  var rows = S.homework.filter(function(h){ return h.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
+  var host = $("ha-list"); host.innerHTML = "";
+  if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
+  var tk = termOf(d).key;
+  rows.forEach(function(h){
+    var el = document.createElement("div"); el.className = "entry";
+    el.innerHTML = '<div class="stripe bad"></div><div class="grow"><div class="who">' + esc(h.studentSnap) +
+      (h.demo ? ' <span class="tag demo">Beispiel</span>' : '') +
+      '</div><div class="det">' + esc(h.classSnap) + (h.note ? ' · ' + esc(h.note) : '') + '</div></div>' +
+      '<div class="val">' + hwIn(h.studentId, tk).length + '×</div>' +
+      '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+    el.querySelector(".x").addEventListener("click", function(){
+      S.homework = S.homework.filter(function(x){ return x.id !== h.id; }); save(); refreshAll(); toast("Eintrag gelöscht");
+    });
+    host.appendChild(el);
+  });
+}
+$("ha-date").addEventListener("change", renderHa);
+$("ha-prev").addEventListener("click", function(){ shiftDate("ha-date", -1); renderHa(); });
+$("ha-next").addEventListener("click", function(){ shiftDate("ha-date", 1); renderHa(); });
+$("ha-today").addEventListener("click", function(){ $("ha-date").value = iso(); renderHa(); });
+$("ha-save").addEventListener("click", function(){
+  var c = cls(sel.cls); if (!c) return;
+  var ids = Object.keys(sel.haStudents); if (!ids.length) return;
+  var now = new Date().toISOString();
+  ids.forEach(function(sid){
+    var st = c.students.filter(function(x){ return x.id === sid; })[0]; if (!st) return;
+    S.homework.push({ id:uid(), date:$("ha-date").value, classId:c.id, classSnap:c.name, studentId:st.id,
+      studentSnap:st.name, note:$("ha-note").value.trim(), ts:now });
+  });
+  save();
+  var n = ids.length; sel.haStudents = {}; $("ha-note").value = "";
+  refreshAll();
+  toast(n === 1 ? "1 Eintrag gespeichert" : n + " Einträge gespeichert");
+});
+
+/* ================= VERLAUF ================= */
+var histStudent = null, histClass = null;
+function openHistory(st, c){
+  histStudent = st; histClass = c; renderHistory(); $("dlgHist").showModal();
+  /* sonst bekommt das erste „x" beim Öffnen den Tastaturfokus und damit einen Rahmen */
+  $("dlgHistBody").focus();
+}
+function renderHistory(){
+  var st = histStudent, c = histClass; if (!st) return;
+  var vs = S.vocab.filter(function(v){ return v.studentId === st.id; });
+  var hs = S.homework.filter(function(h){ return h.studentId === st.id; });
+  $("dlgHistName").textContent = st.name;
+  $("dlgHistSub").textContent = (c ? c.name + " · " : "") + vs.length + " Abfragen · " + hs.length + " vergessene Hausaufgaben";
+  var keys = {}, order = [];
+  vs.concat(hs).forEach(function(e){
+    var t = termOf(e.date);
+    if (!keys[t.key]){ keys[t.key] = t; order.push(t.key); }
+  });
+  order.sort(function(a,b){ return b.localeCompare(a); });
+  var body = $("dlgHistBody"); body.innerHTML = "";
+  if (!order.length){
+    body.innerHTML = '<div class="entries"><div class="empty">Für ' + esc(st.name) + ' ist noch nichts erfasst</div></div>';
+    return;
+  }
+  order.forEach(function(k){
+    var term = keys[k];
+    var tv = vs.filter(function(v){ return termOf(v.date).key === k; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
+    var th = hs.filter(function(h){ return termOf(h.date).key === k; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
+    var g = termGrade(tv);
+    var wrap = document.createElement("div"); wrap.className = "termWrap";
+    var head = document.createElement("div"); head.className = "termHead";
+    head.innerHTML = '<div class="tn">' + esc(term.label) + '<div class="hstatus">' +
+      (tv.length ? g.points + "/" + g.base + " Vokabeln · " + g.pct.toFixed(1).replace(".", ",") + " % · " +
+        (g.complete ? "vollständig" : g.runs + " von " + S.settings.setRuns + " Abfragen") : "keine Abfrage") +
+      (th.length ? " · " + th.length + "× HA vergessen" : "") + '</div></div>' +
+      (tv.length ? '<div class="tg g' + g.grade + (g.complete ? '' : ' prov') + '">' + g.grade + '</div>' : '');
+    wrap.appendChild(head);
+    var list = document.createElement("div"); list.className = "entries";
+    tv.forEach(function(v){
+      var el = document.createElement("div"); el.className = "entry";
+      el.innerHTML = '<div class="stripe"></div><div class="grow"><div class="who">' + deDate(v.date) +
+        ' <span style="font-weight:400; color:var(--ink-2)">Vokabelabfrage</span></div>' +
+        '<div class="det">' + (v.lesson ? esc(v.lesson) : '<em>ohne Lektionsangabe</em>') +
+        (v.note ? ' · ' + esc(v.note) : '') + '</div></div>' +
+        '<div class="val">' + v.points + '/' + v.max + '</div>' +
+        '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+      el.querySelector(".x").addEventListener("click", async function(){
+        var ok = await ask("Eintrag löschen",
+          "Vokabelabfrage vom " + deDate(v.date) + " mit " + v.points + " von " + v.max +
+          " richtigen Vokabeln entfernen? Die Halbjahresnote rechnet sich danach neu.", "Löschen", true);
+        if (!ok) return;
+        S.vocab = S.vocab.filter(function(x){ return x.id !== v.id; });
+        save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
+      });
+      list.appendChild(el);
+    });
+    th.forEach(function(h){
+      var el = document.createElement("div"); el.className = "entry";
+      el.innerHTML = '<div class="stripe bad"></div><div class="grow"><div class="who">' + deDate(h.date) +
+        ' <span style="font-weight:400; color:var(--ink-2)">HA vergessen</span></div>' +
+        '<div class="det">' + (h.note ? esc(h.note) : '<em>ohne Notiz</em>') + '</div></div>' +
+        '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+      el.querySelector(".x").addEventListener("click", async function(){
+        var ok = await ask("Eintrag löschen",
+          "Vergessene Hausaufgabe vom " + deDate(h.date) + " entfernen?", "Löschen", true);
+        if (!ok) return;
+        S.homework = S.homework.filter(function(x){ return x.id !== h.id; });
+        save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
+      });
+      list.appendChild(el);
+    });
+    wrap.appendChild(list);
+    body.appendChild(wrap);
+  });
+}
+$("dlgHistClose").addEventListener("click", function(){ $("dlgHist").close(); });
+
+/* ================= KLASSEN ================= */
+var editingClass = null;
+/* null = der aktiven Klasse folgen, "" = alle zu, sonst die Kennung der offenen Kachel */
+var klOpen = null;
+function renderClasses(){
+  var host = $("kl-list"); host.innerHTML = "";
+  if (!S.classes.length){
+    host.innerHTML = '<div class="entries"><div class="empty">Noch keine Klasse angelegt</div></div>';
+    return;
+  }
+  var openId = (klOpen !== null) ? klOpen : sel.cls;
+  S.classes.forEach(function(c){
+    var open = (c.id === openId);
+    var card = document.createElement("div"); card.className = "card klCard";
+
+    var head = document.createElement("button");
+    head.className = "klHead"; head.type = "button";
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    head.innerHTML =
+      '<span class="klChev">' + (open ? "▾" : "▸") + '</span>' +
+      '<span class="klName">' + esc(c.name) + (c.demo ? ' <span class="tag demo">Beispiel</span>' : '') + '</span>' +
+      '<span class="klCnt">' + c.students.length + ' Schüler</span>';
+    head.addEventListener("click", function(){
+      if (open){ klOpen = ""; renderClasses(); return; }
+      /* Aufklappen heißt zugleich: diese Klasse ist ab jetzt in allen Reitern die aktive. */
+      pickClass(c.id);
+    });
+    card.appendChild(head);
+
+    if (open){
+      var body = document.createElement("div"); body.className = "klBody";
+      var grid = document.createElement("div"); grid.className = "names";
+      if (!c.students.length) grid.innerHTML = '<div class="empty">noch keine Namen</div>';
+      else c.students.forEach(function(st){
+        var n = S.vocab.filter(function(v){ return v.studentId === st.id; }).length;
+        var m = S.homework.filter(function(h){ return h.studentId === st.id; }).length;
+        grid.appendChild(studentTile(st, c, false,
+          '<span class="prog">' + n + '·<b class="' + hwClass(m) + '">' + m + '</b></span>',
+          function(){ openHistory(st, c); }));
+      });
+      body.appendChild(grid);
+
+      var row = document.createElement("div"); row.className = "klActions";
+      var edit = document.createElement("button");
+      edit.className = "btn sm"; edit.type = "button"; edit.textContent = "Bearbeiten";
+      edit.addEventListener("click", function(){ openClassDialog(c); });
+      var del = document.createElement("button");
+      del.className = "btn sm danger"; del.type = "button"; del.textContent = "Löschen";
+      del.addEventListener("click", async function(){
+        if (running() && S.session.classId === c.id){ toast("Erst die laufende Abfrage beenden"); return; }
+        var ok = await ask("Klasse löschen",
+          "„" + c.name + "“ mit " + c.students.length + " Schülern aus den Listen entfernen? " +
+          "Bereits erfasste Abfragen und Hausaufgaben bleiben im Export erhalten.", "Löschen", true);
+        if (!ok) return;
+        S.classes = S.classes.filter(function(x){ return x.id !== c.id; });
+        if (sel.cls === c.id) sel.cls = S.classes.length ? S.classes[0].id : null;
+        klOpen = null;
+        save(); refreshAll(); toast("Klasse gelöscht");
+      });
+      row.appendChild(edit); row.appendChild(del);
+      body.appendChild(row);
+      card.appendChild(body);
+    }
+    host.appendChild(card);
+  });
+}
+function openClassDialog(c){
+  editingClass = c || null;
+  $("dlgClassTitle").textContent = c ? "Klasse bearbeiten" : "Klasse anlegen";
+  $("dlgClassName").value = c ? c.name : "";
+  $("dlgClassStudents").value = c ? c.students.map(function(s){ return s.name; }).join("\n") : "";
+  $("dlgClass").showModal();
+}
+$("kl-add").addEventListener("click", function(){ openClassDialog(null); });
+$("dlgClassCancel").addEventListener("click", function(){ $("dlgClass").close(); });
+$("askYes").addEventListener("click", function(){ askDone(true); });
+$("askNo").addEventListener("click", function(){ askDone(false); });
+$("dlgAsk").addEventListener("cancel", function(e){ e.preventDefault(); askDone(false); });
+$("dlgClassSave").addEventListener("click", function(){
+  var name = $("dlgClassName").value.trim();
+  if (!name){ toast("Bezeichnung fehlt"); return; }
+  var lines = $("dlgClassStudents").value.split("\n").map(function(s){ return s.trim(); }).filter(Boolean);
+  if (editingClass){
+    var old = editingClass.students, kept = [];
+    lines.forEach(function(n){
+      var m = old.filter(function(s){ return s.name === n; })[0];
+      kept.push(m ? m : { id:uid(), name:n });
+    });
+    editingClass.name = name; editingClass.students = kept.sort(byName); delete editingClass.demo;
+  } else {
+    S.classes.push({ id:uid(), name:name, students: lines.map(function(n){ return { id:uid(), name:n }; }).sort(byName) });
+  }
+  S.classes.sort(byClass);
+  save(); $("dlgClass").close(); renderClasses(); renderVokabel(); renderHa(); toast("Gespeichert");
+});
+
+/* ================= EINSTELLUNGEN & EXPORT ================= */
+function renderExport(){
+  $("st-v").textContent = S.vocab.length;
+  $("st-h").textContent = S.homework.length;
+  var n = 0; S.classes.forEach(function(c){ n += c.students.length; });
+  $("st-s").textContent = n;
+  $("ex-last").textContent = S.settings.lastExport
+    ? new Date(S.settings.lastExport).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
+    : "noch nie";
+  for (var i = 0; i < 5; i++) $("sc" + (i+1)).value = S.settings.scale[i];
+  $("set-size").value = S.settings.setSize;
+  $("set-runs").value = S.settings.setRuns;
+  $("set-seats").value = S.settings.seats;
+  $("set-hj2").value = String(S.settings.hj2Start);
+  $("set-termnow").textContent = termOf(iso()).label;
+  var total = S.settings.setSize * S.settings.setRuns, parts = [];
+  for (var p = total; p >= 0; p--) parts.push(p + "→" + gradeFor(Math.round(p / total * 1000) / 10));
+  $("sc-preview").textContent = "Bei " + total + " Vokabeln: " + parts.join("  ");
+}
+["sc1","sc2","sc3","sc4","sc5"].forEach(function(id, i){
+  $(id).addEventListener("change", function(){
+    var v = parseInt($(id).value, 10);
+    if (!isFinite(v) || v < 0 || v > 100){ $(id).value = S.settings.scale[i]; return; }
+    S.settings.scale[i] = v; save(); renderExport(); renderVokabel();
+  });
+});
+function numSetting(id, key, lo, hi){
+  $(id).addEventListener("change", function(){
+    var v = parseInt(this.value, 10);
+    if (!isFinite(v) || v < lo || v > hi){ this.value = S.settings[key]; return; }
+    if (key === "setSize" && running()){ this.value = S.settings[key]; toast("Nicht während einer laufenden Abfrage"); return; }
+    S.settings[key] = v; save(); renderExport(); renderVokabel(); renderHa();
+  });
+}
+numSetting("set-size", "setSize", 1, 50);
+numSetting("set-runs", "setRuns", 1, 10);
+numSetting("set-seats", "seats", 1, 8);
+$("set-hj2").addEventListener("change", function(){
+  S.settings.hj2Start = parseInt(this.value, 10); save(); renderExport(); renderVokabel(); renderHa();
+});
+$("ex-wipe").addEventListener("click", async function(){
+  var ok = await ask("Alle Daten löschen",
+    "Klassen, Abfragen und Hausaufgaben werden unwiderruflich entfernt. " +
+    "Nicht exportierte Einträge sind danach weg.", "Alles löschen", true);
+  if (!ok) return;
+  try { localStorage.removeItem(KEY); } catch(e){}
+  S = null; load(); save();
+  sel = { cls:S.classes.length ? S.classes[0].id : null, vkPicked:{}, haStudents:{} };
+  klOpen = null;
+  renderVokabel(); renderHa(); renderClasses(); renderExport(); toast("Alle Daten gelöscht");
+});
+
+/* ---------- xlsx-Writer (ohne Bibliothek) ---------- */
+var CRC = (function(){
+  var t = new Uint32Array(256);
+  for (var n = 0; n < 256; n++){
+    var c = n;
+    for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf){
+  var c = 0xFFFFFFFF;
+  for (var i = 0; i < buf.length; i++) c = CRC[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function enc(str){ return new TextEncoder().encode(str); }
+function zipStore(files){
+  var parts = [], central = [], offset = 0;
+  files.forEach(function(f){
+    var name = enc(f.name), data = f.data, crc = crc32(data);
+    var lh = new Uint8Array(30 + name.length), dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true); dv.setUint16(4, 20, true); dv.setUint16(6, 0x0800, true);
+    dv.setUint16(8, 0, true); dv.setUint16(10, 0, true); dv.setUint16(12, 0x2821, true);
+    dv.setUint32(14, crc, true); dv.setUint32(18, data.length, true); dv.setUint32(22, data.length, true);
+    dv.setUint16(26, name.length, true); dv.setUint16(28, 0, true);
+    lh.set(name, 30);
+    parts.push(lh, data);
+    var cd = new Uint8Array(46 + name.length), cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true); cv.setUint16(12, 0, true); cv.setUint16(14, 0x2821, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, name.length, true); cv.setUint32(42, offset, true);
+    cd.set(name, 46);
+    central.push(cd);
+    offset += lh.length + data.length;
+  });
+  var cdSize = central.reduce(function(a, b){ return a + b.length; }, 0);
+  var eo = new Uint8Array(22), ev = new DataView(eo.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+  var all = parts.concat(central, [eo]);
+  var total = all.reduce(function(a, b){ return a + b.length; }, 0);
+  var out = new Uint8Array(total), p = 0;
+  all.forEach(function(b){ out.set(b, p); p += b.length; });
+  return out;
+}
+function xesc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,"");
+}
+function colName(i){
+  var s = ""; i = i + 1;
+  while (i > 0){ var r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+  return s;
+}
+function dateSerial(isoStr){
+  var p = String(isoStr).split("-");
+  if (p.length !== 3) return null;
+  return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000) + 25569;
+}
+function sheetXml(rows, widths){
+  var out = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>';
+  if (widths && widths.length){
+    out += "<cols>";
+    widths.forEach(function(w, i){ out += '<col min="' + (i+1) + '" max="' + (i+1) + '" width="' + w + '" customWidth="1"/>'; });
+    out += "</cols>";
+  }
+  out += "<sheetData>";
+  rows.forEach(function(cells, r){
+    out += '<row r="' + (r+1) + '">';
+    cells.forEach(function(c, i){
+      if (c === null || c === undefined || c === "") return;
+      var ref = colName(i) + (r + 1);
+      if (r === 0){
+        out += '<c r="' + ref + '" s="1" t="inlineStr"><is><t>' + xesc(c) + '</t></is></c>';
+      } else if (typeof c === "object"){
+        if (c.t === "d"){
+          var ser = dateSerial(c.v);
+          out += ser === null ? '<c r="' + ref + '" t="inlineStr"><is><t>' + xesc(c.v) + '</t></is></c>'
+                              : '<c r="' + ref + '" s="2"><v>' + ser + '</v></c>';
+        } else if (c.t === "p"){
+          out += '<c r="' + ref + '" s="3"><v>' + (Math.round(c.v * 10000) / 1000000) + '</v></c>';
+        } else if (c.t === "f"){
+          out += '<c r="' + ref + '" s="4"><v>' + c.v + '</v></c>';
+        } else {
+          out += '<c r="' + ref + '"><v>' + c.v + '</v></c>';
+        }
+      } else if (typeof c === "number"){
+        out += '<c r="' + ref + '"><v>' + c + '</v></c>';
+      } else {
+        out += '<c r="' + ref + '" t="inlineStr"><is><t>' + xesc(c) + '</t></is></c>';
+      }
+    });
+    out += "</row>";
+  });
+  out += "</sheetData>";
+  var lastCol = colName(Math.max(0, (rows[0] ? rows[0].length : 1) - 1));
+  out += '<autoFilter ref="A1:' + lastCol + Math.max(1, rows.length) + '"/></worksheet>';
+  return out;
+}
+function buildXlsx(sheets){
+  var files = [];
+  var ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+  sheets.forEach(function(s, i){
+    ct += '<Override PartName="/xl/worksheets/sheet' + (i+1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  });
+  ct += "</Types>";
+  files.push({ name:"[Content_Types].xml", data:enc(ct) });
+  files.push({ name:"_rels/.rels", data:enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>') });
+  var wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+  sheets.forEach(function(s, i){
+    wb += '<sheet name="' + xesc(s.name) + '" sheetId="' + (i+1) + '" r:id="rId' + (i+1) + '"/>';
+  });
+  wb += "</sheets></workbook>";
+  files.push({ name:"xl/workbook.xml", data:enc(wb) });
+  var rel = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  sheets.forEach(function(s, i){
+    rel += '<Relationship Id="rId' + (i+1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i+1) + '.xml"/>';
+  });
+  rel += '<Relationship Id="rId' + (sheets.length+1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  files.push({ name:"xl/_rels/workbook.xml.rels", data:enc(rel) });
+  var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF2B4C7E"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="5">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+    '<xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+    '<xf numFmtId="9" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+    '<xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+    '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  files.push({ name:"xl/styles.xml", data:enc(styles) });
+  sheets.forEach(function(s, i){
+    files.push({ name:"xl/worksheets/sheet" + (i+1) + ".xml", data:enc(sheetXml(s.rows, s.widths)) });
+  });
+  return zipStore(files);
+}
+
+/* ---------- Daten → Tabellenblätter ---------- */
+function buildSheets(){
+  var vRows = [["Datum","Halbjahr","Klasse","Schüler","Lektion / Vokabelsatz","richtig","abgefragt","Erfassung","Notiz","Erfasst am"]];
+  S.vocab.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(v){
+    vRows.push([{t:"d",v:v.date}, termOf(v.date).label, v.classSnap, v.studentSnap, v.lesson || "",
+      v.points, v.max, v.live ? "live" : "manuell", v.note || "", v.ts.slice(0,19).replace("T"," ")]);
+  });
+  var nRows = [["Halbjahr","Klasse","Schüler","Abfragen","richtig gesamt","abgefragt","Prozent","Note","Status"]];
+  S.classes.forEach(function(c){
+    c.students.forEach(function(st){
+      var terms = {};
+      S.vocab.forEach(function(v){ if (v.studentId === st.id) terms[termOf(v.date).key] = termOf(v.date); });
+      Object.keys(terms).sort().forEach(function(k){
+        var g = termGrade(vocabIn(st.id, k));
+        nRows.push([terms[k].label, c.name, st.name, g.runs, g.points, g.base, {t:"p",v:g.pct}, g.grade,
+          g.complete ? "vollständig" : "offen (" + g.runs + " von " + S.settings.setRuns + ")"]);
+      });
+    });
+  });
+  var hRows = [["Datum","Halbjahr","Klasse","Schüler","Notiz","Erfasst am"]];
+  S.homework.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(h){
+    /* Einträge aus älteren Fassungen: das frühere Fach wandert in die Notiz, damit nichts verloren geht */
+    var note = [h.subject, h.note].filter(Boolean).join(" · ");
+    hRows.push([{t:"d",v:h.date}, termOf(h.date).label, h.classSnap, h.studentSnap, note,
+      h.ts.slice(0,19).replace("T"," ")]);
+  });
+  var oRows = [["Klasse","Schüler","Abfragen gesamt","Ø Note über Halbjahre","HA vergessen","letzte HA"]];
+  S.classes.forEach(function(c){
+    c.students.forEach(function(st){
+      var vs = S.vocab.filter(function(v){ return v.studentId === st.id; });
+      var hs = S.homework.filter(function(h){ return h.studentId === st.id; });
+      var terms = {};
+      vs.forEach(function(v){ terms[termOf(v.date).key] = 1; });
+      var gs = Object.keys(terms).map(function(k){ return termGrade(vocabIn(st.id, k)).grade; });
+      var avg = gs.length ? { t:"f", v: Math.round(gs.reduce(function(a,b){ return a+b; },0) / gs.length * 100) / 100 } : "";
+      var lastH = hs.length ? { t:"d", v: hs.map(function(h){ return h.date; }).sort().pop() } : "";
+      oRows.push([c.name, st.name, vs.length, avg, hs.length, lastH]);
+    });
+  });
+  return [
+    { name:"Vokabelabfrage", rows:vRows, widths:[11,15,16,20,28,9,11,11,24,20] },
+    { name:"Noten",          rows:nRows, widths:[15,16,20,10,15,11,10,7,20] },
+    { name:"Hausaufgaben",   rows:hRows, widths:[11,15,16,20,32,20] },
+    { name:"Übersicht",      rows:oRows, widths:[16,20,16,20,13,12] }
+  ];
+}
+function fileName(){ return "Klassenjournal_" + iso() + ".xlsx"; }
+
+$("ex-xlsx").addEventListener("click", async function(){
+  if (!S.vocab.length && !S.homework.length){ toast("Noch keine Einträge zum Exportieren"); return; }
+  if (running()) toast("Hinweis: die laufende Abfrage ist noch nicht enthalten");
+  var bytes;
+  try { bytes = buildXlsx(buildSheets()); }
+  catch(e){ toast("Datei konnte nicht erzeugt werden"); return; }
+  var blob = new Blob([bytes], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  var name = fileName(), done = false;
+  try {
+    if (window.claude && typeof window.claude.use === "function"){
+      var dl = await window.claude.use("downloads");
+      if (dl){ await dl.save({ filename:name, data:blob }); done = true; }
+    }
+  } catch(e){
+    if (e && (e.code === "declined" || e.code === "rate_limited")){ toast("Speichern abgebrochen"); return; }
+  }
+  if (!done) try {
+    var f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files:[f] })){
+      await navigator.share({ files:[f], title:"Klassenjournal" }); done = true;
+    }
+  } catch(e){ if (e && e.name === "AbortError") return; }
+  if (!done) try {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 3000);
+    done = true; toast("Datei erzeugt");
+  } catch(e2){}
+  if (!done){ toast("Teilen hier nicht möglich — nutze den CSV-Weg"); return; }
+  S.settings.lastExport = new Date().toISOString(); save(); renderExport();
+});
+
+function csvCell(v){
+  var s = (v === null || v === undefined) ? "" : (typeof v === "object" ? v.v : v);
+  s = String(s);
+  return /[";\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+$("ex-csv").addEventListener("click", function(){
+  var txt = "";
+  buildSheets().forEach(function(sh){
+    txt += "### " + sh.name + "\n";
+    sh.rows.forEach(function(r){ txt += r.map(csvCell).join(";") + "\n"; });
+    txt += "\n";
+  });
+  $("dlgOutText").textContent = txt;
+  $("dlgOut").showModal();
+  $("dlgOutCopy").onclick = function(){
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(
+        function(){ toast("In die Zwischenablage kopiert"); },
+        function(){ toast("Kopieren blockiert — Text von Hand markieren"); });
+    } else toast("Kopieren blockiert — Text von Hand markieren");
+  };
+});
+$("dlgOutClose").addEventListener("click", function(){ $("dlgOut").close(); });
+
+/* ---------- Start ---------- */
+load();
+var today = iso();
+$("vk-date").value = (S.session && S.session.date) || today;
+$("ha-date").value = today;
+$("todayLbl").innerHTML = new Date().toLocaleDateString("de-DE", { weekday:"short", day:"2-digit", month:"2-digit", year:"numeric" }) +
+  '<br><span style="color:var(--ink-3)">' + termOf(today).label + '</span>';
+if (S.session){
+  sel.cls = S.session.classId;
+  $("vk-lesson").value = S.session.lesson || "";
+} else if (S.classes.length){
+  sel.cls = S.classes[0].id;
+}
+renderVokabel();
+renderHa();
+renderClasses();
+renderExport();
+if (S.session) toast("Laufende Abfrage wiederhergestellt");
+})();
+</script>
+
+</body>
+</html>

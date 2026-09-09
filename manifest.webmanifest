@@ -1,0 +1,16 @@
+{
+  "name": "Klassenjournal",
+  "short_name": "Klassenjournal",
+  "description": "Vokabelabfragen und vergessene Hausaufgaben erfassen",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F1F4F8",
+  "theme_color": "#2B4C7E",
+  "lang": "de",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
