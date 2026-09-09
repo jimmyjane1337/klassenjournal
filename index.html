@@ -142,6 +142,7 @@ select{-webkit-appearance:none; appearance:none; background-image:none}
 
 /* Mündliche Beteiligung: Name mit Saldo, daneben zwei Daumen */
 .names.oral{grid-template-columns:repeat(auto-fill, minmax(240px,1fr))}
+.tile.gone{opacity:.55}
 .tile.ora{align-items:stretch}
 .tile.ora .nmw{flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:7px; padding:10px 11px; font-size:15px}
 .tile.ora .nmw .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -531,11 +532,20 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 
       <div class="card stack">
         <div class="cfgH">Sicherung &amp; Wiederherstellung</div>
-        <p class="gradeMeta" style="margin:0">Die Sicherung enthält alles: Klassen, Abfragen, mündliche Bewertungen, Hausaufgaben. Beim Einlesen wird zusammengeführt, nicht ersetzt.</p>
+        <p class="gradeMeta" style="margin:0">Enthält Klassen, Abfragen, mündliche Bewertungen und Hausaufgaben — mit Kürzeln statt Namen. Beim Einlesen wird zusammengeführt, nicht ersetzt.</p>
         <button class="btn wide" id="bk-save">Sicherung erstellen</button>
         <button class="btn wide" id="bk-load">Sicherung einlesen</button>
         <input type="file" id="bk-file" accept=".json,application/json" hidden>
         <div class="gradeMeta" id="bk-last">noch nie gesichert</div>
+      </div>
+
+      <div class="card stack">
+        <div class="cfgH">Zuordnungsliste</div>
+        <p class="gradeMeta" style="margin:0">Nur Kürzel und Namen, keine Noten. Gehört an einen <b>anderen Ort als die Sicherung</b> — etwa iCloud statt OneDrive. Erst beide zusammen ergeben den vollständigen Bestand.</p>
+        <button class="btn wide" id="zo-save">Zuordnungsliste exportieren</button>
+        <button class="btn wide" id="zo-load">Zuordnungsliste einlesen</button>
+        <input type="file" id="zo-file" accept=".csv,text/csv" hidden>
+        <div class="gradeMeta" id="zo-last">noch nie exportiert</div>
       </div>
 
       <details class="help">
@@ -654,6 +664,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
     <div>
       <span class="label">Schüler — ein Name pro Zeile</span>
       <textarea id="dlgClassStudents" placeholder="Amelie Brandt&#10;Jonas Deger&#10;…"></textarea>
+      <p class="gradeMeta" id="dlgClassLeft" style="margin:8px 0 0" hidden></p>
     </div>
   </div>
   <div class="df">
@@ -738,6 +749,50 @@ function paintDateRow(dateId, dayId, todayId){
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function first(n){ return String(n).split(" ")[0]; }
 function byName(a,b){ return a.name.localeCompare(b.name, "de", { sensitivity:"base" }); }
+/* Ausgeschiedene Schüler bleiben im Bestand — sie verschwinden nur aus den
+   Erfassungsansichten, nicht aus Auswertung, Verlauf und Export. */
+/* Kürzel werden einmal vergeben und nie wiederverwendet — auch nicht das eines
+   ausgeschiedenen Schülers. Nur so bleibt die Zuordnung über Jahre stabil. */
+function codePrefix(c){
+  if (!c.codePrefix){
+    var m = /^\s*([0-9]{1,2}[A-Za-zÄÖÜäöü]?)/.exec(c.name);
+    c.codePrefix = m ? m[1] : String(c.name).trim().slice(0,3).replace(/\s/g,"");
+  }
+  return c.codePrefix;
+}
+function nextCode(c){
+  var pre = codePrefix(c), max = 0, re = new RegExp("^" + pre + "-(\\d+)$");
+  c.students.forEach(function(st){
+    var m = st.code && re.exec(st.code);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return pre + "-" + String(max + 1).padStart(2, "0");
+}
+function ensureCodes(){
+  S.classes.forEach(function(c){
+    codePrefix(c);
+    c.students.forEach(function(st){ if (!st.code) st.code = nextCode(c); });
+  });
+}
+/* Kennung → Kürzel bzw. Name; das Kürzel geht nach außen, der Name bleibt im Gerät. */
+function codeFor(sid){
+  for (var i = 0; i < S.classes.length; i++){
+    var st = S.classes[i].students.filter(function(x){ return x.id === sid; })[0];
+    if (st) return st.code || "?";
+  }
+  return null;
+}
+function nameFor(sid){
+  for (var i = 0; i < S.classes.length; i++){
+    var st = S.classes[i].students.filter(function(x){ return x.id === sid; })[0];
+    if (st) return st.name;
+  }
+  return null;
+}
+function codeOfEntry(e){ return codeFor(e.studentId) || e.codeSnap || "?"; }
+
+function aktive(c){ return c ? c.students.filter(function(s){ return !s.left; }) : []; }
+function ausgeschieden(c){ return c ? c.students.filter(function(s){ return !!s.left; }) : []; }
 /* Klassen heißen nach Konvention „7a …" — erst nach Jahrgangszahl, dann nach Buchstabe.
    Namen ohne führende Zahl landen alphabetisch dahinter. */
 function byClass(a,b){
@@ -781,7 +836,7 @@ function toast(msg){
 /* ---------- Zustand ---------- */
 function defaults(){
   return { scale:[91,75,58,41,25], oralScale:[3,2,1,0,-1], setSize:6, setRuns:2, seats:4,
-           hwWarn:2, hwAlert:3, lastExport:null, lastBackup:null };
+           hwWarn:2, hwAlert:3, lastExport:null, lastBackup:null, lastMap:null };
 }
 function seed(){
   var names = "Amelie Brandt,Jonas Deger,Merve Kaya,Noah Riedl,Pia Sommer,Tarek Öz,Lena Vogt,Finn Wieland".split(",");
@@ -816,6 +871,7 @@ function load(){
   if (!Array.isArray(S.oral)) S.oral = [];
   S.classes.sort(byClass);
   S.classes.forEach(function(c){ c.students.sort(byName); });
+  ensureCodes();
   S.vocab.forEach(function(v){ if (!v.max) v.max = S.settings.setSize; });
 }
 function save(){
@@ -976,8 +1032,8 @@ function renderVokabel(){
   host.innerHTML = "";
   var tk = termOf($("vk-date").value).key;
   if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
-  else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
-  else c.students.forEach(function(st){
+  else if (!aktive(c).length) host.innerHTML = '<div class="empty">Diese Klasse hat keine aktiven Schüler</div>';
+  else aktive(c).forEach(function(st){
     host.appendChild(studentTile(st, c, !!sel.vkPicked[st.id],
       '<span class="prog">' + vocabAsked(st.id, tk) + "/" + vocabZiel() + "</span>",
       function(){
@@ -1142,7 +1198,7 @@ function openAdd(){
   var tk = termOf(s.date).key;
   $("dlgAddSub").textContent = c.name + " · " + s.cands.length + " von " + S.settings.seats + " Plätzen belegt";
   var host = $("dlgAddList"); host.innerHTML = "";
-  var free = c.students.filter(function(st){ return !inRun[st.id]; });
+  var free = aktive(c).filter(function(st){ return !inRun[st.id]; });
   if (!free.length){ host.innerHTML = '<div class="empty">Alle Schüler dieser Klasse sind bereits dabei</div>'; }
   free.forEach(function(st){
     host.appendChild(studentTile(st, c, false,
@@ -1284,8 +1340,8 @@ function renderMuendlich(){
   host.innerHTML = "";
   var tk = termOf($("mu-date").value).key;
   if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
-  else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
-  else c.students.forEach(function(st){ host.appendChild(oralTile(st, c, tk)); });
+  else if (!aktive(c).length) host.innerHTML = '<div class="empty">Diese Klasse hat keine aktiven Schüler</div>';
+  else aktive(c).forEach(function(st){ host.appendChild(oralTile(st, c, tk)); });
   $("mu-undo").disabled = !oralUndo.length;
   paintDateRow("mu-date", "mu-weekday", "mu-today");
   renderMuList();
@@ -1350,8 +1406,8 @@ function renderHa(){
   host.innerHTML = "";
   var tk = termOf($("ha-date").value).key;
   if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
-  else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
-  else c.students.forEach(function(st){
+  else if (!aktive(c).length) host.innerHTML = '<div class="empty">Diese Klasse hat keine aktiven Schüler</div>';
+  else aktive(c).forEach(function(st){
     var n = hwIn(st.id, tk).length;
     host.appendChild(studentTile(st, c, !!sel.haStudents[st.id],
       '<span class="prog"><b class="' + hwClass(n) + '">' + n + '</b>×</span>',
@@ -1524,7 +1580,8 @@ function renderClasses(){
     head.innerHTML =
       '<span class="klChev">' + (open ? "▾" : "▸") + '</span>' +
       '<span class="klName">' + esc(c.name) + (c.demo ? ' <span class="tag demo">Beispiel</span>' : '') + '</span>' +
-      '<span class="klCnt">' + c.students.length + ' Schüler</span>';
+      '<span class="klCnt">' + aktive(c).length + ' Schüler' +
+        (ausgeschieden(c).length ? ' · ' + ausgeschieden(c).length + ' ausgesch.' : '') + '</span>';
     head.addEventListener("click", function(){
       if (open){ klOpen = ""; renderClasses(); return; }
       /* Aufklappen heißt zugleich: diese Klasse ist ab jetzt in allen Reitern die aktive. */
@@ -1536,7 +1593,7 @@ function renderClasses(){
       var body = document.createElement("div"); body.className = "klBody";
       var grid = document.createElement("div"); grid.className = "names oral";
       if (!c.students.length) grid.innerHTML = '<div class="empty">noch keine Namen</div>';
-      else c.students.forEach(function(st){
+      else aktive(c).forEach(function(st){
         /* alles auf das Halbjahr des gewählten Datums bezogen */
         var tk = termOf($("vk-date").value).key;
         var og = oralGrade(oralIn(st.id, tk));
@@ -1544,13 +1601,34 @@ function renderClasses(){
         grid.appendChild(studentTile(st, c, false,
           '<span class="prog kz">' +
             '<span class="kl">V</span>' + vocabAsked(st.id, tk) + '/' + vocabZiel() +
-            ' <span class="kl">(</span>' + vocabRight(st.id, tk) + '<span class="kl">R)</span>' +
+            '<span class="kl">(</span>' + vocabRight(st.id, tk) + '<span class="kl">R)</span>' +
             ' <span class="kl">M</span><b class="p">' + og.pro + '</b>|<b class="n">' + og.con + '</b>' +
             ' <span class="kl">H</span><b class="' + hwClass(m) + '">' + m + '</b>' +
           '</span>',
           function(){ openHistory(st, c); }));
       });
       body.appendChild(grid);
+
+      if (ausgeschieden(c).length){
+        var lbl = document.createElement("span");
+        lbl.className = "label"; lbl.style.margin = "14px 0 6px";
+        lbl.textContent = "Ausgeschieden — Daten bleiben im Export";
+        body.appendChild(lbl);
+        var g2 = document.createElement("div"); g2.className = "names oral";
+        ausgeschieden(c).forEach(function(st){
+          var tk2 = termOf($("vk-date").value).key;
+          var og2 = oralGrade(oralIn(st.id, tk2));
+          var t = studentTile(st, c, false,
+            '<span class="prog kz"><span class="kl">V</span>' + vocabAsked(st.id, tk2) + '/' + vocabZiel() +
+            '<span class="kl">(</span>' + vocabRight(st.id, tk2) + '<span class="kl">R)</span>' +
+            ' <span class="kl">M</span><b class="p">' + og2.pro + '</b>|<b class="n">' + og2.con + '</b>' +
+            ' <span class="kl">H</span>' + hwIn(st.id, tk2).length + '</span>',
+            function(){ openHistory(st, c); });
+          t.classList.add("gone");
+          g2.appendChild(t);
+        });
+        body.appendChild(g2);
+      }
 
       var row = document.createElement("div"); row.className = "klActions";
       var edit = document.createElement("button");
@@ -1580,7 +1658,13 @@ function openClassDialog(c){
   editingClass = c || null;
   $("dlgClassTitle").textContent = c ? "Klasse bearbeiten" : "Klasse anlegen";
   $("dlgClassName").value = c ? c.name : "";
-  $("dlgClassStudents").value = c ? c.students.map(function(s){ return s.name; }).join("\n") : "";
+  $("dlgClassStudents").value = c ? aktive(c).map(function(s){ return s.name; }).join("\n") : "";
+  var weg = c ? ausgeschieden(c) : [];
+  $("dlgClassLeft").hidden = !weg.length;
+  if (weg.length){
+    $("dlgClassLeft").textContent = "Ausgeschieden: " + weg.map(function(s){ return s.name; }).join(", ") +
+      " — Namen wieder eintragen, um sie zurückzuholen.";
+  }
   $("dlgClass").showModal();
 }
 $("kl-add").addEventListener("click", function(){ openClassDialog(null); });
@@ -1593,17 +1677,32 @@ $("dlgClassSave").addEventListener("click", function(){
   if (!name){ toast("Bezeichnung fehlt"); return; }
   var lines = $("dlgClassStudents").value.split("\n").map(function(s){ return s.trim(); }).filter(Boolean);
   if (editingClass){
-    var old = editingClass.students, kept = [];
+    var old = editingClass.students, kept = [], genannt = {};
     lines.forEach(function(n){
       var m = old.filter(function(s){ return s.name === n; })[0];
-      kept.push(m ? m : { id:uid(), name:n });
+      if (m){ delete m.left; kept.push(m); }        /* war ausgeschieden → wieder aktiv */
+      else kept.push({ id:uid(), name:n,             /* neu hinzugekommen */
+             code:nextCode({ name:editingClass.name, codePrefix:codePrefix(editingClass),
+                             students:old.concat(kept) }) });
+      genannt[n] = 1;
+    });
+    /* Nicht mehr genannte werden markiert, nicht entfernt — sonst verschwänden
+       ihre Noten aus Auswertung und Export. */
+    old.forEach(function(st){
+      if (!genannt[st.name]){
+        if (!st.left) st.left = iso();
+        kept.push(st);
+      }
     });
     editingClass.name = name; editingClass.students = kept.sort(byName); delete editingClass.demo;
   } else {
-    S.classes.push({ id:uid(), name:name, students: lines.map(function(n){ return { id:uid(), name:n }; }).sort(byName) });
+    var neuK = { id:uid(), name:name, students: lines.map(function(n){ return { id:uid(), name:n }; }).sort(byName) };
+    codePrefix(neuK);
+    neuK.students.forEach(function(st){ st.code = nextCode(neuK); });
+    S.classes.push(neuK);
   }
   S.classes.sort(byClass);
-  save(); $("dlgClass").close(); renderClasses(); renderVokabel(); renderHa(); toast("Gespeichert");
+  save(); $("dlgClass").close(); refreshAll(); toast("Gespeichert");
 });
 
 /* ================= EINSTELLUNGEN & EXPORT ================= */
@@ -1627,6 +1726,9 @@ function renderExport(){
   $("bk-last").textContent = S.settings.lastBackup
     ? "zuletzt gesichert " + new Date(S.settings.lastBackup).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
     : "noch nie gesichert";
+  $("zo-last").textContent = S.settings.lastMap
+    ? "zuletzt exportiert " + new Date(S.settings.lastMap).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
+    : "noch nie exportiert — ohne sie ist die Sicherung nicht auflösbar";
   /* Statt aller Werte nur die Schwellen: ab wie vielen richtigen Vokabeln welche Note */
   var total = S.settings.setSize * S.settings.setRuns, parts = [];
   for (var g = 1; g <= 5; g++){
@@ -1840,19 +1942,19 @@ function buildXlsx(sheets){
 
 /* ---------- Daten → Tabellenblätter ---------- */
 function buildSheets(){
-  var vRows = [["Datum","Halbjahr","Klasse","Schüler","Lektion / Vokabelsatz","richtig","abgefragt","Erfassung","Notiz","Erfasst am"]];
+  var vRows = [["Datum","Halbjahr","Klasse","Kürzel","Lektion / Vokabelsatz","richtig","abgefragt","Erfassung","Notiz","Erfasst am"]];
   S.vocab.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(v){
-    vRows.push([{t:"d",v:v.date}, termOf(v.date).label, v.classSnap, v.studentSnap, v.lesson || "",
+    vRows.push([{t:"d",v:v.date}, termOf(v.date).label, v.classSnap, codeOfEntry(v), v.lesson || "",
       v.points, v.max, v.live ? "live" : "manuell", v.note || "", v.ts.slice(0,19).replace("T"," ")]);
   });
-  var oRowsRaw = [["Datum","Halbjahr","Klasse","Schüler","Bewertung","Bemerkung","Erfasst am"]];
+  var oRowsRaw = [["Datum","Halbjahr","Klasse","Kürzel","Bewertung","Bemerkung","Erfasst am"]];
   S.oral.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(o){
-    oRowsRaw.push([{t:"d",v:o.date}, termOf(o.date).label, o.classSnap, o.studentSnap,
+    oRowsRaw.push([{t:"d",v:o.date}, termOf(o.date).label, o.classSnap, codeOfEntry(o),
       o.value > 0 ? "pro" : "contra", o.note || "", o.ts.slice(0,19).replace("T"," ")]);
   });
 
   /* Ein Blatt je Schüler und Halbjahr, mit beiden Notenindikationen nebeneinander */
-  var nRows = [["Halbjahr","Klasse","Schüler","Abfragen","richtig gesamt","abgefragt","Prozent",
+  var nRows = [["Halbjahr","Klasse","Kürzel","Abfragen","richtig gesamt","abgefragt","Prozent",
                 "Note Vokabeln","Status","pro","contra","Saldo","Note mündlich","HA vergessen"]];
   S.classes.forEach(function(c){
     c.students.forEach(function(st){
@@ -1863,7 +1965,7 @@ function buildSheets(){
       Object.keys(terms).sort().forEach(function(k){
         var tv = vocabIn(st.id, k), g = termGrade(tv);
         var og = oralGrade(oralIn(st.id, k));
-        nRows.push([terms[k].label, c.name, st.name,
+        nRows.push([terms[k].label, c.name, st.code,
           tv.length ? g.runs : "", tv.length ? g.points : "", tv.length ? g.base : "",
           tv.length ? {t:"p",v:g.pct} : "", tv.length ? g.grade : "",
           tv.length ? (g.complete ? "vollständig" : "offen (" + g.runs + " von " + S.settings.setRuns + ")") : "",
@@ -1871,14 +1973,14 @@ function buildSheets(){
       });
     });
   });
-  var hRows = [["Datum","Halbjahr","Klasse","Schüler","Notiz","Erfasst am"]];
+  var hRows = [["Datum","Halbjahr","Klasse","Kürzel","Notiz","Erfasst am"]];
   S.homework.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(h){
     /* Einträge aus älteren Fassungen: das frühere Fach wandert in die Notiz, damit nichts verloren geht */
     var note = [h.subject, h.note].filter(Boolean).join(" · ");
-    hRows.push([{t:"d",v:h.date}, termOf(h.date).label, h.classSnap, h.studentSnap, note,
+    hRows.push([{t:"d",v:h.date}, termOf(h.date).label, h.classSnap, codeOfEntry(h), note,
       h.ts.slice(0,19).replace("T"," ")]);
   });
-  var oRows = [["Klasse","Schüler","Abfragen gesamt","Ø Note Vokabeln","pro","contra",
+  var oRows = [["Klasse","Kürzel","Status","Abfragen gesamt","Ø Note Vokabeln","pro","contra",
                 "Ø Note mündlich","HA vergessen","letzte HA"]];
   S.classes.forEach(function(c){
     c.students.forEach(function(st){
@@ -1895,7 +1997,8 @@ function buildSheets(){
       var mean = function(a){ return a.length ? { t:"f", v: Math.round(a.reduce(function(x,y){ return x+y; },0) / a.length * 100) / 100 } : ""; };
       var pro = os.filter(function(o){ return o.value > 0; }).length;
       var lastH = hs.length ? { t:"d", v: hs.map(function(h){ return h.date; }).sort().pop() } : "";
-      oRows.push([c.name, st.name, vs.length, mean(gs), pro, os.length - pro, mean(gos), hs.length, lastH]);
+      oRows.push([c.name, st.code, st.left ? "ausgeschieden " + deDate(st.left) : "aktiv",
+        vs.length, mean(gs), pro, os.length - pro, mean(gos), hs.length, lastH]);
     });
   });
   return [
@@ -1903,7 +2006,7 @@ function buildSheets(){
     { name:"Mündlich",       rows:oRowsRaw, widths:[11,15,16,20,11,32,20] },
     { name:"Noten",          rows:nRows,    widths:[15,16,20,10,15,11,10,14,20,7,8,8,15,13] },
     { name:"Hausaufgaben",   rows:hRows,    widths:[11,15,16,20,32,20] },
-    { name:"Übersicht",      rows:oRows,    widths:[16,20,16,18,7,8,17,13,12] }
+    { name:"Übersicht",      rows:oRows,    widths:[16,20,20,16,18,7,8,17,13,12] }
   ];
 }
 function fileName(){ return "Klassenjournal_" + iso() + ".xlsx"; }
@@ -1947,9 +2050,29 @@ $("ex-xlsx").addEventListener("click", async function(){
 });
 
 /* ---------- Sicherung erstellen und einlesen ---------- */
+/* Die Sicherung verlässt das Gerät — sie führt Kürzel, aber keine Namen. */
+function ohneNamen(list){
+  return list.map(function(e){
+    var k = {};
+    Object.keys(e).forEach(function(f){ if (f !== "studentSnap") k[f] = e[f]; });
+    k.codeSnap = codeOfEntry(e);
+    return k;
+  });
+}
 function backupData(){
-  return { app:"klassenjournal", version:1, exported:new Date().toISOString(),
-           settings:S.settings, classes:S.classes, vocab:S.vocab, oral:S.oral, homework:S.homework };
+  return {
+    app:"klassenjournal", version:2, pseudonym:true, exported:new Date().toISOString(),
+    settings:S.settings,
+    classes: S.classes.map(function(c){
+      return { id:c.id, name:c.name, codePrefix:codePrefix(c),
+               students: c.students.map(function(st){
+                 var k = { id:st.id, code:st.code };
+                 if (st.left) k.left = st.left;
+                 return k;
+               }) };
+    }),
+    vocab: ohneNamen(S.vocab), oral: ohneNamen(S.oral), homework: ohneNamen(S.homework)
+  };
 }
 $("bk-save").addEventListener("click", async function(){
   var txt = JSON.stringify(backupData());
@@ -1959,6 +2082,68 @@ $("bk-save").addEventListener("click", async function(){
   toast("Sicherung erstellt");
 });
 $("bk-load").addEventListener("click", function(){ $("bk-file").value = ""; $("bk-file").click(); });
+
+/* ---------- Zuordnungsliste: Kürzel ↔ Name, bewusst als eigene Datei ---------- */
+function zuordnungCsv(){
+  var t = "Klasse;Kürzel;Name;Status\n";
+  S.classes.forEach(function(c){
+    c.students.slice().sort(byName).forEach(function(st){
+      t += [c.name, st.code || "", st.name, st.left ? "ausgeschieden " + deDate(st.left) : "aktiv"]
+             .map(csvCell).join(";") + "\n";
+    });
+  });
+  return t;
+}
+function csvZeile(z){
+  var out = [], cur = "", q = false;
+  for (var i = 0; i < z.length; i++){
+    var ch = z[i];
+    if (q){
+      if (ch === '"' && z[i+1] === '"'){ cur += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ";"){ out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+$("zo-save").addEventListener("click", async function(){
+  var blob = new Blob(["\ufeff" + zuordnungCsv()], { type:"text/csv;charset=utf-8" });
+  if (!await deliver(blob, "Klassenjournal-Zuordnung_" + iso() + ".csv")){ toast("Ablegen hier nicht möglich"); return; }
+  S.settings.lastMap = new Date().toISOString(); save(); renderExport();
+  toast("Zuordnungsliste erstellt — an einem anderen Ort ablegen als die Sicherung");
+});
+$("zo-load").addEventListener("click", function(){ $("zo-file").value = ""; $("zo-file").click(); });
+$("zo-file").addEventListener("change", function(){
+  var f = this.files && this.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onerror = function(){ toast("Datei konnte nicht gelesen werden"); };
+  r.onload = function(){
+    var txt = String(r.result).replace(/^\ufeff/, "");
+    var zeilen = txt.split(/\r?\n/).filter(function(z){ return z.trim(); });
+    if (!zeilen.length){ toast("Die Datei ist leer"); return; }
+    var kopf = csvZeile(zeilen[0]).map(function(x){ return x.trim().toLowerCase(); });
+    var iCode = kopf.indexOf("kürzel"), iName = kopf.indexOf("name");
+    if (iCode < 0 || iName < 0){ toast("Das ist keine Zuordnungsliste — Spalten Kürzel und Name fehlen"); return; }
+    var gesetzt = 0, unbekannt = 0;
+    zeilen.slice(1).forEach(function(z){
+      var sp = csvZeile(z);
+      var code = (sp[iCode] || "").trim(), nm = (sp[iName] || "").trim();
+      if (!code || !nm) return;
+      var treffer = null;
+      S.classes.forEach(function(c){
+        c.students.forEach(function(st){ if (st.code === code) treffer = st; });
+      });
+      if (treffer){ treffer.name = nm; gesetzt++; } else unbekannt++;
+    });
+    S.classes.forEach(function(c){ c.students.sort(byName); });
+    save(); refreshAll();
+    toast(gesetzt + " Namen zugeordnet" + (unbekannt ? ", " + unbekannt + " Kürzel unbekannt" : ""));
+  };
+  r.readAsText(f);
+});
 $("bk-file").addEventListener("change", function(){
   var f = this.files && this.files[0]; if (!f) return;
   var r = new FileReader();
@@ -1998,14 +2183,23 @@ function importBackup(data){
              S.classes.filter(function(c){ return sameName(c.name, ic.name); })[0];
     if (!lc){
       lc = { id:ic.id, name:ic.name, students:[] };
+      if (ic.codePrefix) lc.codePrefix = ic.codePrefix;
       S.classes.push(lc); stat.klassen++;
     }
     clsMap[ic.id] = lc.id;
     (ic.students || []).forEach(function(is){
       if (!is || !is.id) return;
       var ls = lc.students.filter(function(x){ return x.id === is.id; })[0] ||
-               lc.students.filter(function(x){ return sameName(x.name, is.name); })[0];
-      if (!ls){ ls = { id:is.id, name:is.name }; lc.students.push(ls); stat.schueler++; }
+               (is.code ? lc.students.filter(function(x){ return x.code === is.code; })[0] : null) ||
+               (is.name ? lc.students.filter(function(x){ return sameName(x.name, is.name); })[0] : null);
+      if (!ls){
+        /* Aus einer pseudonymen Sicherung kommt kein Name — bis die Zuordnungsliste
+           eingelesen ist, steht das Kürzel an seiner Stelle. */
+        ls = { id:is.id, name:is.name || is.code || "?", code:is.code };
+        if (is.left) ls.left = is.left;
+        lc.students.push(ls); stat.schueler++;
+      }
+      if (is.code && !ls.code) ls.code = is.code;
       stMap[is.id] = ls.id;
     });
     lc.students.sort(byName);
@@ -2021,6 +2215,7 @@ function importBackup(data){
       var kopie = JSON.parse(JSON.stringify(e));
       if (kopie.classId && clsMap[kopie.classId]) kopie.classId = clsMap[kopie.classId];
       if (kopie.studentId && stMap[kopie.studentId]) kopie.studentId = stMap[kopie.studentId];
+      if (!kopie.studentSnap) kopie.studentSnap = nameFor(kopie.studentId) || kopie.codeSnap || "?";
       delete kopie.demo;
       S[k].push(kopie); stat[k]++;
     });
@@ -2036,6 +2231,7 @@ function importBackup(data){
     setUeb = true;
   }
 
+  ensureCodes();
   if (S.classes.length && !cls(sel.cls)) sel.cls = S.classes[0].id;
   klOpen = null; oralUndo = [];
   save(); refreshAll();
