@@ -31,6 +31,7 @@
   --good:#4FBF95; --good-ink:#0F1620; --good-soft:#16302A;
   --warn:#E0A44A; --warn-soft:#33280F;
   --bad:#EE8375; --bad-ink:#0F1620; --bad-soft:#3A1F1C;
+  --hw:#B79BE8;   /* vergessene Hausaufgaben — abgesetzt von Rot fuer muendlich negativ */
   --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -16px rgba(0,0,0,.7);
   --r:12px;
 }
@@ -46,6 +47,7 @@
   --good:#1C7A5B; --good-ink:#FFFFFF; --good-soft:#E2F2EB;
   --warn:#A9660A; --warn-soft:#F8EEDD;
   --bad:#B23A2E; --bad-ink:#FFFFFF; --bad-soft:#F9E7E4;
+  --hw:#6C4BA6;
   --accent-tint:#E1EAF7;
   color:var(--ink);
   background:var(--surface);
@@ -152,7 +154,7 @@ select{-webkit-appearance:none; appearance:none; background-image:none}
 .cnt2 .kl{color:var(--ink-3); font-weight:400; margin-right:1px}
 .cnt2 b.p{color:var(--good)} .cnt2 b.n{color:var(--bad)}
 .cnt2.leer{color:var(--ink-3)} .cnt2.leer b{font-weight:400; color:var(--ink-3)}
-/* Klassenübersicht: Vokabeln, Mündlich, Hausaufgaben nebeneinander */
+/* Klassenübersicht: Abfragen, Mündlich, Hausaufgaben nebeneinander */
 .prog.kz{white-space:nowrap}
 .prog.kz .kl{color:var(--ink-3); font-weight:400; margin-right:1px}
 .prog.kz b{font-weight:600}
@@ -236,17 +238,20 @@ button{font-family:inherit}
 .gradeNum.prov{opacity:.55}
 
 .entries{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); overflow:hidden}
-.entry{display:flex; align-items:center; gap:10px; padding:11px 13px; border-bottom:1px solid var(--line)}
+.entry{display:flex; align-items:center; gap:8px; padding:11px 12px; border-bottom:1px solid var(--line)}
 .entry:last-child{border-bottom:0}
 .entry .who{font-weight:600; font-size:15px}
 .entry .det{font-size:13px; color:var(--ink-2)}
 .entry .grow{flex:1; min-width:0}
-.entry .val{font-family:"IBM Plex Mono", monospace; font-size:14px; font-variant-numeric:tabular-nums; font-weight:600; flex:0 0 auto}
-.entry .x{border:0; background:transparent; color:var(--ink-3); font-size:20px; line-height:1; padding:4px 7px; cursor:pointer; border-radius:8px; flex:0 0 auto}
+.entry .val{font-family:"IBM Plex Mono", monospace; font-size:12.5px; font-variant-numeric:tabular-nums; font-weight:600; flex:0 0 auto; white-space:nowrap; text-align:right; line-height:1.25; color:var(--ink-2)}
+.entry .val.good{color:var(--good)}
+.entry .val.bad{color:var(--bad)}
+.entry .x{border:0; background:transparent; color:var(--ink-3); font-size:20px; line-height:1; padding:4px 5px; cursor:pointer; border-radius:8px; flex:0 0 auto}
 .entry .x:hover{color:var(--bad); background:var(--bad-soft)}
 .stripe{width:3px; align-self:stretch; border-radius:2px; background:var(--accent); flex:0 0 auto}
 .stripe.bad{background:var(--bad)}
 .stripe.good{background:var(--good)}
+.stripe.hw{background:var(--hw)}
 .empty{padding:18px 14px; color:var(--ink-3); font-size:14.5px; font-style:italic; text-align:center}
 
 .tag{display:inline-flex; align-items:center; font-size:11.5px; font-weight:600; letter-spacing:.04em; padding:3px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-2); text-transform:uppercase}
@@ -323,6 +328,15 @@ dialog .df{padding:12px 16px; border-top:1px solid var(--line); display:flex; ga
 .termWrap{margin-bottom:14px}
 .termWrap .entries{border-radius:0 0 10px 10px}
 .hstatus{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3)}
+/* Halbjahres-Kennzahlen: zwei Spalten, damit die Doppelpunkte untereinander stehen */
+.hstat{display:grid; grid-template-columns:auto 1fr; column-gap:8px; row-gap:3px; margin-top:6px;
+  font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em}
+.hstat .k{color:var(--ink-3); white-space:nowrap}
+/* Die Kennzahlen sollen in je eine Zeile passen — deshalb kurz gehalten */
+.hstat .v{white-space:nowrap}
+@media (max-width:340px){ .hstat{font-size:10px; column-gap:6px} }
+.hstat b{font-weight:600}
 hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 .hidden{display:none !important}
 .cfgH{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:16px; letter-spacing:-.01em}
@@ -373,7 +387,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 
   <!-- ===== VOKABELN ===== -->
   <section id="v-vokabel">
-    <h2 class="vt" id="vk-title">Vokabelabfrage</h2>
+    <h2 class="vt" id="vk-title">Abfrage</h2>
 
     <!-- Vorbereitung -->
     <div class="stack" id="vk-setup">
@@ -393,7 +407,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
           <div class="names" id="vk-students" style="margin-top:9px"></div>
         </div>
         <div>
-          <span class="label">Lektion / Vokabelsatz</span>
+          <span class="label">Notiz (optional)</span>
           <input type="text" id="vk-lesson" placeholder="z. B. Unit 4 – Irregular verbs" autocomplete="off">
         </div>
         <button class="btn primary wide" id="vk-start">Abfrage starten</button>
@@ -402,10 +416,10 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
       <details class="help">
         <summary>Ergebnis nachträglich eintragen</summary>
         <div class="body">
-          <p>Für Nachschreiber oder Korrekturen: Schüler oben auswählen, Anzahl richtiger Vokabeln setzen, eintragen — ohne Live-Abfrage.</p>
+          <p>Für Nachschreiber oder Korrekturen: Schüler oben auswählen, Anzahl richtiger Antworten setzen, eintragen — ohne Live-Abfrage.</p>
           <div class="row">
             <div class="f1">
-              <span class="label">Richtige Vokabeln</span>
+              <span class="label">Richtige Antworten</span>
               <input type="number" id="mn-points" min="0" value="5" inputmode="numeric">
             </div>
             <div class="f1">
@@ -575,9 +589,9 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
       </details>
 
       <div class="card stack">
-        <div class="cfgH">Vokabelabfrage</div>
+        <div class="cfgH">Abfrage</div>
         <div class="row3">
-          <div><span class="label">Vok je Abfrage</span><input type="number" id="set-size" min="1" max="50" inputmode="numeric"></div>
+          <div><span class="label">Fragen je Abfrage</span><input type="number" id="set-size" min="1" max="50" inputmode="numeric"></div>
           <div><span class="label">Abfragen je HJ</span><input type="number" id="set-runs" min="1" max="10" inputmode="numeric"></div>
           <div><span class="label">Max simultan</span><input type="number" id="set-seats" min="1" max="8" inputmode="numeric"></div>
         </div>
@@ -637,8 +651,8 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 <nav class="tabs" id="tabs">
   <button data-view="vokabel" aria-current="true">
     <span class="dot"></span>
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M8 4v16"/><path d="M11.5 9.5h4"/><path d="M11.5 13.5h4"/></svg>
-    Vokabeln
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 0 1 4.7.6c0 1.6-2.4 1.9-2.4 3.4"/><path d="M12 17.1h.01"/></svg>
+    Abfragen
   </button>
   <button data-view="muendlich">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 4z"/><path d="M8.5 10h7"/></svg>
@@ -692,7 +706,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 </dialog>
 
 <dialog id="dlgNote">
-  <div class="dh"><div class="t" id="dlgNoteT">Bemerkung</div><div class="s" id="dlgNoteS">–</div></div>
+  <div class="dh"><div class="t" id="dlgNoteT">Notiz</div><div class="s" id="dlgNoteS">–</div></div>
   <div class="db">
     <input type="text" id="dlgNoteV" placeholder="z. B. hat den Konjunktiv erklärt" autocomplete="off">
   </div>
@@ -962,14 +976,14 @@ function oralGrade(entries){
   return { pro:pro, con:con, saldo:saldo, count:entries.length, grade: oralGradeFor(saldo) };
 }
 
-/* Abgefragte Vokabeln eines Halbjahres gegen die Zielzahl */
+/* Gestellte Fragen eines Halbjahres gegen die Zielzahl */
 function vocabAsked(sid, termKey){
   var n = 0;
   vocabIn(sid, termKey).forEach(function(v){ n += (+v.max || S.settings.setSize); });
   return n;
 }
 function vocabZiel(){ return S.settings.setRuns * S.settings.setSize; }
-/* richtig beantwortete Vokabeln eines Halbjahres */
+/* richtig beantwortete Fragen eines Halbjahres */
 function vocabRight(sid, termKey){
   var n = 0;
   vocabIn(sid, termKey).forEach(function(v){ n += (+v.points || 0); });
@@ -989,13 +1003,14 @@ function refreshAll(){
   renderClasses();
   renderExport();
 }
+/* Prozent und Note beziehen sich auf die bereits gestellten Fragen. Solange die
+   Zielzahl nicht erreicht ist, gilt die Note als vorlaeufig und wird blass gezeigt. */
 function termGrade(entries){
   var need = S.settings.setRuns * S.settings.setSize, pts = 0, mx = 0;
   entries.forEach(function(v){ pts += (+v.points || 0); mx += (+v.max || S.settings.setSize); });
-  var base = Math.max(mx, entries.length >= S.settings.setRuns ? mx : need);
-  var pct = base > 0 ? Math.round(pts / base * 1000) / 10 : 0;
-  return { points:pts, max:mx, base:base, runs:entries.length, pct:pct,
-           grade:gradeFor(pct), complete: entries.length >= S.settings.setRuns };
+  var pct = mx > 0 ? Math.round(pts / mx * 1000) / 10 : 0;
+  return { points:pts, max:mx, base:mx, need:need, runs:entries.length, pct:pct,
+           grade:gradeFor(pct), complete: mx >= need };
 }
 
 /* ---------- Navigation ---------- */
@@ -1054,14 +1069,35 @@ function studentTile(st, c, on, progHtml, onPick){
   return wrap;
 }
 
-/* ================= VOKABELN ================= */
+/* ---------- Eintragszeilen ----------
+   Ein Bauplan fuer alle Reiter und den Verlauf: oben der Name (im Verlauf das
+   Datum), darunter Klasse und Notiz, rechts das Ergebnis. */
+function entryRow(o){
+  var el = document.createElement("div");
+  el.className = "entry";
+  el.innerHTML =
+    '<div class="stripe' + (o.stripe ? " " + o.stripe : "") + '"></div>' +
+    '<div class="grow"><div class="who">' + o.title + '</div>' +
+    '<div class="det">' + o.sub + '</div></div>' +
+    '<div class="val' + (o.valClass ? " " + o.valClass : "") + '">' + o.value + '</div>' +
+    '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+  if (o.onNote) el.querySelector(".grow").addEventListener("click", o.onNote);
+  el.querySelector(".x").addEventListener("click", o.onDelete);
+  return el;
+}
+function subLine(klasse, notiz){
+  return (klasse ? esc(klasse) + " · " : "") +
+         (notiz ? esc(notiz) : '<em>Notiz hinzufügen</em>');
+}
+
+/* ================= ABFRAGEN ================= */
 function running(){ return !!S.session; }
 
 function renderVokabel(){
   var run = running();
   $("vk-setup").classList.toggle("hidden", run);
   $("vk-run").classList.toggle("hidden", !run);
-  $("vk-title").textContent = run ? "Abfrage läuft" : "Vokabelabfrage";
+  $("vk-title").textContent = run ? "Abfrage läuft" : "Abfrage";
   $("tabs").children[0].classList.toggle("running", run);
   if (run){ renderRun(); return; }
 
@@ -1093,22 +1129,30 @@ function renderVokabel(){
   paintDateRow("vk-date", "vk-weekday", "vk-today");
   renderVkList();
 }
+/* Die Tagesliste zeigt nur die aktive Klasse — sonst stuenden fremde Klassen
+   in einer Liste, die zum Erfassen der gerade unterrichteten gedacht ist. */
+function tagesListe(host, d, alle, leerText, bau){
+  host.innerHTML = "";
+  var c = cls(sel.cls);
+  if (!c){ host.innerHTML = '<div class="empty">Klasse wählen</div>'; return; }
+  var rows = alle.filter(function(e){ return e.date === d && e.classId === c.id; })
+                 .sort(function(a,b){ return b.ts.localeCompare(a.ts); });
+  if (!rows.length){
+    host.innerHTML = '<div class="empty">' + leerText + ' in ' + esc(c.name) + ' noch nichts erfasst</div>';
+    return;
+  }
+  rows.forEach(function(e){ host.appendChild(bau(e)); });
+}
 function renderVkList(){
   var d = $("vk-date").value;
-  var rows = S.vocab.filter(function(v){ return v.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
-  var host = $("vk-list"); host.innerHTML = "";
-  if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
-  rows.forEach(function(v){
-    var el = document.createElement("div"); el.className = "entry";
-    el.innerHTML = '<div class="stripe"></div><div class="grow"><div class="who">' + esc(v.studentSnap) +
-      (v.demo ? ' <span class="tag demo">Beispiel</span>' : '') +
-      '</div><div class="det">' + v.points + ' von ' + v.max + ' richtig · ' + esc(v.classSnap) +
-      (v.lesson ? ' · ' + esc(v.lesson) : '') + '</div></div>' +
-      '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-    el.querySelector(".x").addEventListener("click", function(){
-      drop("vocab", v.id); save(); refreshAll(); toast("Eintrag gelöscht");
+  tagesListe($("vk-list"), d, S.vocab, "Am " + deDate(d), function(v){
+    return entryRow({
+      title: esc(v.studentSnap) + (v.demo ? ' <span class="tag demo">Beispiel</span>' : ''),
+      sub: subLine(v.classSnap, v.lesson),
+      value: v.points + " von " + v.max + "<br>richtig",
+      onNote: function(){ openNote(v, v.studentSnap + " · Abfrage · " + deDate(v.date), "lesson"); },
+      onDelete: function(){ drop("vocab", v.id); save(); refreshAll(); toast("Eintrag gelöscht"); }
     });
-    host.appendChild(el);
   });
 }
 $("vk-date").addEventListener("change", function(){ setDate($("vk-date").value); });
@@ -1119,7 +1163,7 @@ $("vk-today").addEventListener("click", function(){ setDate(iso()); });
 /* ---- Angefangene Pakete ----
    Eine vorzeitig beendete Abfrage ist ein angefangenes Paket. Beim naechsten Mal
    wird es weitergefuehrt, statt ein zweites unvollstaendiges daneben zu legen —
-   sonst zerfiele der Satz aus sechs Vokabeln in Bruchstuecke. */
+   sonst zerfiele der Satz aus sechs Fragen in Bruchstuecke. */
 function offenesPaket(sid, tk){
   var offen = vocabIn(sid, tk).filter(function(v){
     return (+v.max || 0) > 0 && (+v.max) < S.settings.setSize;
@@ -1148,13 +1192,13 @@ $("vk-start").addEventListener("click", async function(){
   var cands = c.students.filter(function(st){ return sel.vkPicked[st.id]; }).map(function(st){
     var k = candFor(st, tk);
     if (k.contId) weiter.push(first(st.name) + " " + k.pre + "/" + S.settings.setSize);
-    else if (vocabIn(st.id, tk).length >= S.settings.setRuns) over.push(st.name);
+    else if (vocabAsked(st.id, tk) >= vocabZiel()) over.push(st.name);
     return k;
   });
   if (over.length){
     var go = await ask("Schon abgefragt",
-      over.join(", ") + (over.length === 1 ? " hat" : " haben") + " im Halbjahr bereits " +
-      S.settings.setRuns + " Abfragen. Die Note ergibt sich dann aus allen Abfragen zusammen.",
+      over.join(", ") + (over.length === 1 ? " hat" : " haben") + " im Halbjahr bereits alle " +
+      vocabZiel() + " Fragen beantwortet. Die Note ergibt sich dann aus allen Abfragen zusammen.",
       "Trotzdem starten");
     if (!go) return;
   }
@@ -1212,7 +1256,7 @@ function renderRun(){
     $("run-pos").textContent = "fertig — oben nächsten Kandidaten antippen";
     $("run-answers").classList.add("hidden");
   } else {
-    $("run-pos").textContent = "Vokabel " + ((a ? a.answers.length : 0) + 1) + " von " + size +
+    $("run-pos").textContent = "Frage " + ((a ? a.answers.length : 0) + 1) + " von " + size +
       " · " + (a ? a.answers.filter(Boolean).length : 0) + " richtig" +
       (a && a.pre ? " · Fortsetzung vom " + deDate(a.contDate) : "");
     $("run-answers").classList.remove("hidden");
@@ -1312,7 +1356,7 @@ function openEnd(){
         '<div class="gradeMeta">' + right + "/" + asked + " richtig" +
         (k.contId ? " (davon " + neu + " heute)" : "") +
         " · Halbjahr " + t.points + "/" + t.base +
-        " · " + (t.complete ? GRADEWORD[t.grade] : "vorläufig, " + t.runs + " von " + S.settings.setRuns + " Abfragen") +
+        " · " + (t.complete ? GRADEWORD[t.grade] : "vorläufig, " + t.base + " von " + t.need + " Fragen") +
         '</div></div>';
     }
     body.appendChild(box);
@@ -1340,7 +1384,7 @@ $("dlgEndSave").addEventListener("click", function(){
       if (alt){
         alt.points = right; alt.max = asked;
         alt.note = (asked < S.settings.setSize
-          ? "Teilabfrage über " + asked + " Vokabeln, am " + deDate(s.date) + " fortgesetzt"
+          ? "Teilabfrage über " + asked + " Fragen, am " + deDate(s.date) + " fortgesetzt"
           : "am " + deDate(s.date) + " vervollständigt");
         if (!alt.lesson && s.lesson) alt.lesson = s.lesson;
         alt.ts = now; alt.live = true;
@@ -1349,7 +1393,7 @@ $("dlgEndSave").addEventListener("click", function(){
     }
     S.vocab.push({ id:uid(), date:s.date, classId:s.classId, classSnap:s.classSnap, studentId:k.sid,
       studentSnap:k.name, lesson:s.lesson, points:right, max:asked,
-      note:(asked < S.settings.setSize ? "Teilabfrage über " + asked + " Vokabeln" : ""),
+      note:(asked < S.settings.setSize ? "Teilabfrage über " + asked + " Fragen" : ""),
       ts:now, live:true });
     n++;
   });
@@ -1439,29 +1483,25 @@ function renderMuendlich(){
 }
 function renderMuList(){
   var d = $("mu-date").value;
-  var rows = S.oral.filter(function(o){ return o.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
-  var host = $("mu-list"); host.innerHTML = "";
-  if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
-  rows.forEach(function(o){
-    var el = document.createElement("div"); el.className = "entry";
-    el.innerHTML = '<div class="stripe ' + (o.value > 0 ? 'good' : 'bad') + '"></div>' +
-      '<div class="grow"><div class="who">' + esc(o.studentSnap) + '</div>' +
-      '<div class="det">' + esc(o.classSnap) + ' · ' + (o.value > 0 ? 'positiv' : 'negativ') +
-      (o.note ? ' · ' + esc(o.note) : ' · <em>Bemerkung hinzufügen</em>') + '</div></div>' +
-      '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-    el.querySelector(".grow").addEventListener("click", function(){
-      openNote(o, o.studentSnap + " · " + (o.value > 0 ? "positiv" : "negativ") + " · " + deDate(o.date));
+  tagesListe($("mu-list"), d, S.oral, "Am " + deDate(d), function(o){
+    var pos = o.value > 0;
+    return entryRow({
+      stripe: pos ? "good" : "bad",
+      title: esc(o.studentSnap),
+      sub: subLine(o.classSnap, o.note),
+      value: pos ? "positiv" : "negativ",
+      valClass: pos ? "good" : "bad",
+      onNote: function(){ openNote(o, o.studentSnap + " · " + (pos ? "positiv" : "negativ") + " · " + deDate(o.date)); },
+      onDelete: async function(){
+        var ok = await ask("Eintrag löschen",
+          o.studentSnap + " · " + (pos ? "positiv" : "negativ") + " vom " + deDate(o.date) +
+          " entfernen? Die Note für das Halbjahr rechnet sich danach neu.", "Löschen", true);
+        if (!ok) return;
+        drop("oral", o.id);
+        oralUndo = oralUndo.filter(function(x){ return x !== o.id; });
+        save(); refreshAll(); toast("Eintrag gelöscht");
+      }
     });
-    el.querySelector(".x").addEventListener("click", async function(){
-      var ok = await ask("Eintrag löschen",
-        esc(o.studentSnap) + " · " + (o.value > 0 ? "positiv" : "negativ") + " vom " + deDate(o.date) +
-        " entfernen? Die Note für das Halbjahr rechnet sich danach neu.", "Löschen", true);
-      if (!ok) return;
-      drop("oral", o.id);
-      oralUndo = oralUndo.filter(function(x){ return x !== o.id; });
-      save(); refreshAll(); toast("Eintrag gelöscht");
-    });
-    host.appendChild(el);
   });
 }
 $("mu-date").addEventListener("change", function(){ setDate($("mu-date").value); });
@@ -1476,18 +1516,20 @@ $("mu-undo").addEventListener("click", function(){
   toast(e ? e.studentSnap + " zurückgenommen" : "Zurückgenommen");
 });
 
-/* Bemerkung nachtragen */
-var noteTarget = null;
-function openNote(e, sub){
-  noteTarget = e;
+/* Notiz nachtragen */
+var noteTarget = null, noteField = "note";
+/* Bei Abfragen steht die Notiz im Feld der frueheren Lektionsangabe — dort hat
+   sie die Lehrerin beim Start eingetippt, und dort bleibt sie auffindbar. */
+function openNote(e, sub, feld){
+  noteTarget = e; noteField = feld || "note";
   $("dlgNoteS").textContent = sub;
-  $("dlgNoteV").value = e.note || "";
+  $("dlgNoteV").value = e[noteField] || "";
   $("dlgNote").showModal();
 }
 $("dlgNoteCancel").addEventListener("click", function(){ $("dlgNote").close(); });
 $("dlgNoteSave").addEventListener("click", function(){
-  if (noteTarget){ noteTarget.note = $("dlgNoteV").value.trim(); save(); refreshAll(); }
-  $("dlgNote").close(); toast("Bemerkung gespeichert");
+  if (noteTarget){ noteTarget[noteField] = $("dlgNoteV").value.trim(); save(); refreshAll(); }
+  $("dlgNote").close(); toast("Notiz gespeichert");
 });
 
 /* ================= HAUSAUFGABEN ================= */
@@ -1515,23 +1557,15 @@ function renderHa(){
 }
 function renderHaList(){
   var d = $("ha-date").value;
-  var rows = S.homework.filter(function(h){ return h.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
-  var host = $("ha-list"); host.innerHTML = "";
-  if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
-  rows.forEach(function(h){
-    var el = document.createElement("div"); el.className = "entry";
-    el.innerHTML = '<div class="stripe bad"></div><div class="grow"><div class="who">' + esc(h.studentSnap) +
-      (h.demo ? ' <span class="tag demo">Beispiel</span>' : '') +
-      '</div><div class="det">' + esc(h.classSnap) +
-      (h.note ? ' · ' + esc(h.note) : ' · <em>Notiz hinzufügen</em>') + '</div></div>' +
-      '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-    el.querySelector(".grow").addEventListener("click", function(){
-      openNote(h, h.studentSnap + " · vergessene Hausaufgabe · " + deDate(h.date));
+  tagesListe($("ha-list"), d, S.homework, "Am " + deDate(d), function(h){
+    return entryRow({
+      stripe: "hw",
+      title: esc(h.studentSnap) + (h.demo ? ' <span class="tag demo">Beispiel</span>' : ''),
+      sub: subLine(h.classSnap, h.note),
+      value: "1×",
+      onNote: function(){ openNote(h, h.studentSnap + " · vergessene Hausaufgabe · " + deDate(h.date)); },
+      onDelete: function(){ drop("homework", h.id); save(); refreshAll(); toast("Eintrag gelöscht"); }
     });
-    el.querySelector(".x").addEventListener("click", function(){
-      drop("homework", h.id); save(); refreshAll(); toast("Eintrag gelöscht");
-    });
-    host.appendChild(el);
   });
 }
 $("ha-date").addEventListener("change", function(){ setDate($("ha-date").value); });
@@ -1566,8 +1600,7 @@ function renderHistory(){
   var hs = S.homework.filter(function(h){ return h.studentId === st.id; });
   var os = S.oral.filter(function(o){ return o.studentId === st.id; });
   $("dlgHistName").textContent = st.name;
-  $("dlgHistSub").textContent = (c ? c.name + " · " : "") + vs.length + " Abfragen · " +
-    os.length + " mündlich · " + hs.length + " vergessene Hausaufgaben";
+  $("dlgHistSub").textContent = c ? c.name : "";
   var keys = {}, order = [];
   vs.concat(hs).concat(os).forEach(function(e){
     var t = termOf(e.date);
@@ -1587,62 +1620,72 @@ function renderHistory(){
     var g = termGrade(tv), og = oralGrade(to);
     var wrap = document.createElement("div"); wrap.className = "termWrap";
     var head = document.createElement("div"); head.className = "termHead";
-    head.innerHTML = '<div class="tn">' + esc(term.label) + '<div class="hstatus">' +
-      (tv.length ? g.points + "/" + g.base + " Vokabeln · " + g.pct.toFixed(1).replace(".", ",") + " % · " +
-        (g.complete ? "vollständig" : g.runs + " von " + S.settings.setRuns + " Abfragen") : "keine Abfrage") +
-      (to.length ? " · mündlich " + og.pro + " pro / " + og.con + " contra · Note " + og.grade : "") +
-      (th.length ? " · " + th.length + "× HA vergessen" : "") + '</div></div>' +
-      (tv.length ? '<div class="tg g' + g.grade + (g.complete ? '' : ' prov') + '">' + g.grade + '</div>' : '');
+    var note = function(n){ return '<b class="g' + n + '">' + n + '</b>'; };
+    head.innerHTML = '<div class="tn">' + esc(term.label) +
+      '<div class="hstat">' +
+        '<span class="k">Abgefragt:</span><span class="v">' +
+          (tv.length
+            ? g.base + "/" + g.need + " – " + g.points + "R (" + Math.round(g.pct) + "%), Note " +
+              note(g.grade) + (g.complete ? "" : " (vorl.)")
+            : "noch nichts") +
+        '</span>' +
+        '<span class="k">Mündlich:</span><span class="v">' +
+          og.pro + " Pro | " + og.con + " Contra, Note " + note(og.grade) +
+        '</span>' +
+        '<span class="k">Keine HA:</span><span class="v">' + th.length + "×</span>" +
+      '</div></div>';
     wrap.appendChild(head);
     var list = document.createElement("div"); list.className = "entries";
+    var art = function(t){ return ' <span style="font-weight:400; color:var(--ink-2)">' + t + '</span>'; };
     tv.forEach(function(v){
-      var el = document.createElement("div"); el.className = "entry";
-      el.innerHTML = '<div class="stripe"></div><div class="grow"><div class="who">' + deDate(v.date) +
-        ' <span style="font-weight:400; color:var(--ink-2)">Vokabelabfrage</span></div>' +
-        '<div class="det">' + (v.lesson ? esc(v.lesson) : '<em>ohne Lektionsangabe</em>') +
-        (v.note ? ' · ' + esc(v.note) : '') + '</div></div>' +
-        '<div class="val">' + v.points + '/' + v.max + '</div>' +
-        '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-      el.querySelector(".x").addEventListener("click", async function(){
-        var ok = await ask("Eintrag löschen",
-          "Vokabelabfrage vom " + deDate(v.date) + " mit " + v.points + " von " + v.max +
-          " richtigen Vokabeln entfernen? Die Halbjahresnote rechnet sich danach neu.", "Löschen", true);
-        if (!ok) return;
-        drop("vocab", v.id);
-        save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
-      });
-      list.appendChild(el);
+      list.appendChild(entryRow({
+        title: deDate(v.date) + art("Abfrage"),
+        sub: subLine(null, v.lesson) + (v.note ? ' · <em>' + esc(v.note) + '</em>' : ''),
+        value: v.points + " von " + v.max + "<br>richtig",
+        onNote: function(){ openNote(v, st.name + " · Abfrage · " + deDate(v.date), "lesson"); },
+        onDelete: async function(){
+          var ok = await ask("Eintrag löschen",
+            "Abfrage vom " + deDate(v.date) + " mit " + v.points + " von " + v.max +
+            " richtigen Antworten entfernen? Die Halbjahresnote rechnet sich danach neu.", "Löschen", true);
+          if (!ok) return;
+          drop("vocab", v.id);
+          save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
+        }
+      }));
     });
     to.forEach(function(o){
-      var el = document.createElement("div"); el.className = "entry";
-      el.innerHTML = '<div class="stripe ' + (o.value > 0 ? 'good' : 'bad') + '"></div>' +
-        '<div class="grow"><div class="who">' + deDate(o.date) +
-        ' <span style="font-weight:400; color:var(--ink-2)">mündlich ' + (o.value > 0 ? 'positiv' : 'negativ') + '</span></div>' +
-        '<div class="det">' + (o.note ? esc(o.note) : '<em>ohne Bemerkung</em>') + '</div></div>' +
-        '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-      el.querySelector(".x").addEventListener("click", async function(){
-        var ok = await ask("Eintrag löschen",
-          "Mündliche Bewertung vom " + deDate(o.date) + " entfernen? Die Note rechnet sich danach neu.", "Löschen", true);
-        if (!ok) return;
-        drop("oral", o.id);
-        save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
-      });
-      list.appendChild(el);
+      var pos = o.value > 0;
+      list.appendChild(entryRow({
+        stripe: pos ? "good" : "bad",
+        title: deDate(o.date) + art("mündlich"),
+        sub: subLine(null, o.note),
+        value: pos ? "positiv" : "negativ",
+        valClass: pos ? "good" : "bad",
+        onNote: function(){ openNote(o, st.name + " · " + (pos ? "positiv" : "negativ") + " · " + deDate(o.date)); },
+        onDelete: async function(){
+          var ok = await ask("Eintrag löschen",
+            "Mündliche Bewertung vom " + deDate(o.date) + " entfernen? Die Note rechnet sich danach neu.", "Löschen", true);
+          if (!ok) return;
+          drop("oral", o.id);
+          save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
+        }
+      }));
     });
     th.forEach(function(h){
-      var el = document.createElement("div"); el.className = "entry";
-      el.innerHTML = '<div class="stripe bad"></div><div class="grow"><div class="who">' + deDate(h.date) +
-        ' <span style="font-weight:400; color:var(--ink-2)">HA vergessen</span></div>' +
-        '<div class="det">' + (h.note ? esc(h.note) : '<em>ohne Notiz</em>') + '</div></div>' +
-        '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-      el.querySelector(".x").addEventListener("click", async function(){
-        var ok = await ask("Eintrag löschen",
-          "Vergessene Hausaufgabe vom " + deDate(h.date) + " entfernen?", "Löschen", true);
-        if (!ok) return;
-        drop("homework", h.id);
-        save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
-      });
-      list.appendChild(el);
+      list.appendChild(entryRow({
+        stripe: "hw",
+        title: deDate(h.date) + art("HA vergessen"),
+        sub: subLine(null, h.note),
+        value: "1×",
+        onNote: function(){ openNote(h, st.name + " · vergessene Hausaufgabe · " + deDate(h.date)); },
+        onDelete: async function(){
+          var ok = await ask("Eintrag löschen",
+            "Vergessene Hausaufgabe vom " + deDate(h.date) + " entfernen?", "Löschen", true);
+          if (!ok) return;
+          drop("homework", h.id);
+          save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
+        }
+      }));
     });
     wrap.appendChild(list);
     body.appendChild(wrap);
@@ -1691,7 +1734,7 @@ function renderClasses(){
         var m = hwIn(st.id, tk).length;
         grid.appendChild(studentTile(st, c, false,
           '<span class="prog kz">' +
-            '<span class="kl">V</span>' + vocabAsked(st.id, tk) + '/' + vocabZiel() +
+            '<span class="kl">A</span>' + vocabAsked(st.id, tk) + '/' + vocabZiel() +
             '<span class="kl">(</span>' + vocabRight(st.id, tk) + '<span class="kl">R)</span>' +
             ' <span class="kl">M</span><b class="p">' + og.pro + '</b>|<b class="n">' + og.con + '</b>' +
             ' <span class="kl">H</span><b class="' + hwClass(m) + '">' + m + '</b>' +
@@ -1710,7 +1753,7 @@ function renderClasses(){
           var tk2 = termOf($("vk-date").value).key;
           var og2 = oralGrade(oralIn(st.id, tk2));
           var t = studentTile(st, c, false,
-            '<span class="prog kz"><span class="kl">V</span>' + vocabAsked(st.id, tk2) + '/' + vocabZiel() +
+            '<span class="prog kz"><span class="kl">A</span>' + vocabAsked(st.id, tk2) + '/' + vocabZiel() +
             '<span class="kl">(</span>' + vocabRight(st.id, tk2) + '<span class="kl">R)</span>' +
             ' <span class="kl">M</span><b class="p">' + og2.pro + '</b>|<b class="n">' + og2.con + '</b>' +
             ' <span class="kl">H</span>' + hwIn(st.id, tk2).length + '</span>',
@@ -1821,7 +1864,7 @@ function renderExport(){
   $("zo-last").textContent = S.settings.lastMap
     ? "zuletzt exportiert " + new Date(S.settings.lastMap).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
     : "noch nie exportiert — ohne sie ist die Sicherung nicht auflösbar";
-  /* Statt aller Werte nur die Schwellen: ab wie vielen richtigen Vokabeln welche Note */
+  /* Statt aller Werte nur die Schwellen: ab wie vielen richtigen Antworten welche Note */
   var total = S.settings.setSize * S.settings.setRuns, parts = [];
   for (var g = 1; g <= 5; g++){
     var ab = null;
@@ -1830,7 +1873,7 @@ function renderExport(){
     }
     if (ab !== null) parts.push(g + " ab " + ab);
   }
-  $("sc-preview").textContent = "Bei " + total + " Vokabeln: " + parts.join(" · ") + " · darunter 6";
+  $("sc-preview").textContent = "Bei " + total + " Fragen: " + parts.join(" · ") + " · darunter 6";
   var lo = Math.min.apply(null, S.settings.oralScale) - 1, hi = Math.max.apply(null, S.settings.oralScale);
   var op = [];
   for (var q = hi; q >= lo; q--) op.push((q > 0 ? "+" + q : q) + "→" + oralGradeFor(q));
@@ -2035,20 +2078,20 @@ function buildXlsx(sheets){
 
 /* ---------- Daten → Tabellenblätter ---------- */
 function buildSheets(){
-  var vRows = [["Datum","Halbjahr","Klasse","Kürzel","Lektion / Vokabelsatz","richtig","abgefragt","Erfassung","Notiz","Erfasst am"]];
+  var vRows = [["Datum","Halbjahr","Klasse","Kürzel","Notiz","richtig","gestellt","Erfassung","Hinweis","Erfasst am"]];
   S.vocab.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(v){
     vRows.push([{t:"d",v:v.date}, termOf(v.date).label, v.classSnap, codeOfEntry(v), v.lesson || "",
       v.points, v.max, v.live ? "live" : "manuell", v.note || "", v.ts.slice(0,19).replace("T"," ")]);
   });
-  var oRowsRaw = [["Datum","Halbjahr","Klasse","Kürzel","Bewertung","Bemerkung","Erfasst am"]];
+  var oRowsRaw = [["Datum","Halbjahr","Klasse","Kürzel","Bewertung","Notiz","Erfasst am"]];
   S.oral.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(o){
     oRowsRaw.push([{t:"d",v:o.date}, termOf(o.date).label, o.classSnap, codeOfEntry(o),
       o.value > 0 ? "pro" : "contra", o.note || "", o.ts.slice(0,19).replace("T"," ")]);
   });
 
   /* Ein Blatt je Schüler und Halbjahr, mit beiden Notenindikationen nebeneinander */
-  var nRows = [["Halbjahr","Klasse","Kürzel","Abfragen","richtig gesamt","abgefragt","Prozent",
-                "Note Vokabeln","Status","pro","contra","Saldo","Note mündlich","HA vergessen"]];
+  var nRows = [["Halbjahr","Klasse","Kürzel","Abfragen","richtig gesamt","gestellt","Prozent",
+                "Note Abfrage","Status","pro","contra","Saldo","Note mündlich","HA vergessen"]];
   S.classes.forEach(function(c){
     c.students.forEach(function(st){
       var terms = {};
@@ -2061,7 +2104,7 @@ function buildSheets(){
         nRows.push([terms[k].label, c.name, st.code,
           tv.length ? g.runs : "", tv.length ? g.points : "", tv.length ? g.base : "",
           tv.length ? {t:"p",v:g.pct} : "", tv.length ? g.grade : "",
-          tv.length ? (g.complete ? "vollständig" : "offen (" + g.runs + " von " + S.settings.setRuns + ")") : "",
+          tv.length ? (g.complete ? "vollständig" : "offen (" + g.base + " von " + g.need + " Fragen)") : "",
           og.pro, og.con, og.saldo, og.grade, hwIn(st.id, k).length]);
       });
     });
@@ -2073,7 +2116,7 @@ function buildSheets(){
     hRows.push([{t:"d",v:h.date}, termOf(h.date).label, h.classSnap, codeOfEntry(h), note,
       h.ts.slice(0,19).replace("T"," ")]);
   });
-  var oRows = [["Klasse","Kürzel","Status","Abfragen gesamt","Ø Note Vokabeln","pro","contra",
+  var oRows = [["Klasse","Kürzel","Status","Abfragen gesamt","Ø Note Abfragen","pro","contra",
                 "Ø Note mündlich","HA vergessen","letzte HA"]];
   S.classes.forEach(function(c){
     c.students.forEach(function(st){
@@ -2095,7 +2138,7 @@ function buildSheets(){
     });
   });
   return [
-    { name:"Vokabelabfrage", rows:vRows,    widths:[11,15,16,20,28,9,11,11,24,20] },
+    { name:"Abfragen",       rows:vRows,    widths:[11,15,16,20,28,9,11,11,24,20] },
     { name:"Mündlich",       rows:oRowsRaw, widths:[11,15,16,20,11,32,20] },
     { name:"Noten",          rows:nRows,    widths:[15,16,20,10,15,11,10,14,20,7,8,8,15,13] },
     { name:"Hausaufgaben",   rows:hRows,    widths:[11,15,16,20,32,20] },
