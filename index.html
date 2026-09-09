@@ -71,7 +71,9 @@
   color-scheme:light;
 }
 
-*{box-sizing:border-box}
+/* touch-action:manipulation nimmt dem Doppeltippen das Zoomen — Zwei-Finger-Zoom
+   und Scrollen bleiben erhalten, damit die App vergrößerbar bleibt. */
+*{box-sizing:border-box; touch-action:manipulation}
 html,body{height:100%}
 body{
   margin:0; background:var(--paper); color:var(--ink);
