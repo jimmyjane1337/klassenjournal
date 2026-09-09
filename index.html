@@ -557,6 +557,11 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
         <button class="btn wide hidden" id="sy-now">Jetzt abgleichen</button>
         <button class="btn wide hidden" id="sy-off">Verbindung trennen</button>
         <p class="gradeMeta" id="sy-hint" style="margin:0"></p>
+        <div class="hidden" id="sy-uriBox">
+          <span class="label">In Entra zu hinterlegende Umleitungsadresse</span>
+          <div class="gradeMeta" id="sy-uri" style="word-break:break-all; user-select:all"></div>
+          <button class="btn sm" id="sy-copy" style="margin-top:8px">Adresse kopieren</button>
+        </div>
         <button class="btn sm hidden" id="sy-manual">Anmeldung von Hand abschließen</button>
       </div>
 
@@ -2557,6 +2562,8 @@ function renderSync(){
   $("sy-now").classList.toggle("hidden", !verbunden);
   $("sy-off").classList.toggle("hidden", !verbunden);
   $("sy-manual").classList.toggle("hidden", verbunden || !msMoeglich());
+  $("sy-uriBox").classList.toggle("hidden", verbunden || !msMoeglich());
+  $("sy-uri").textContent = msRedirect();
   if (!msMoeglich()){
     st.textContent = "hier nicht verfügbar";
     hint.textContent = "Die Anmeldung braucht die installierte App unter ihrer eigenen Adresse. In dieser Vorschau bleibt der Weg über „XLSX-Datei erzeugen & teilen“.";
@@ -2580,7 +2587,10 @@ async function msHandleUrl(href){
   var q;
   try { q = new URL(href, location.href).searchParams; } catch(e){ toast("Das ist keine gültige Adresse"); return false; }
   if (q.get("error")){
-    syncFehler = q.get("error_description") || q.get("error");
+    var txt = q.get("error_description") || q.get("error");
+    syncFehler = /redirect_uri/.test(txt)
+      ? "Microsoft kennt diese Umleitungsadresse nicht. Die unten angezeigte Adresse muss in der App-Registrierung unter „Single-page application“ zeichengleich eingetragen sein — auch der Schrägstrich am Ende zählt."
+      : txt;
     renderSync();
     return false;
   }
@@ -2611,6 +2621,14 @@ $("sy-off").addEventListener("click", async function(){
     "Trennen", true);
   if (!ok) return;
   msClear(); syncFehler = ""; renderSync(); toast("Verbindung getrennt");
+});
+$("sy-copy").addEventListener("click", function(){
+  var v = msRedirect();
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(
+      function(){ toast("Adresse kopiert"); },
+      function(){ toast("Kopieren blockiert — Adresse von Hand markieren"); });
+  } else toast("Kopieren blockiert — Adresse von Hand markieren");
 });
 $("sy-manual").addEventListener("click", function(){
   $("dlgPasteIn").value = ""; $("dlgPaste").showModal();
