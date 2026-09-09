@@ -10,8 +10,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Klassenjournal">
-<meta name="theme-color" content="#FFFFFF">
-<style>html{color-scheme:light dark}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="theme-color" content="#152238">
+<style>html{color-scheme:dark}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
 <title>Klassenjournal</title>
@@ -19,39 +19,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
-/* Grundpalette der Seite — folgt der Systemeinstellung. */
+/* Grundfläche fest dunkelblau — unabhängig von der Einstellung des Geräts.
+   Die Inhaltsboxen setzen weiter unten auf hell zurück. */
 :root{
-  --paper:#F1F4F8; --grid:#DCE3EC; --surface:#FFFFFF; --surface-2:#E8EDF4;
-  --ink:#16233B; --ink-2:#4C5C78; --ink-3:#8593AC;
-  --line:#D2DAE6; --line-strong:#B9C4D4;
-  --accent:#2B4C7E; --accent-ink:#FFFFFF; --accent-soft:#DEE8F6;
-  --good:#1C7A5B; --good-ink:#FFFFFF; --good-soft:#D9EFE7;
-  --warn:#A9660A; --warn-soft:#F6E7CF;
-  --bad:#B23A2E; --bad-ink:#FFFFFF; --bad-soft:#F6DFDC;
-  --shadow:0 1px 2px rgba(22,35,59,.07), 0 6px 20px -12px rgba(22,35,59,.28);
-  --r:12px;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#0F1620; --grid:#1A2432; --surface:#18212E; --surface-2:#212C3C;
-    --ink:#E8EEF7; --ink-2:#AAB8CD; --ink-3:#77869E;
-    --line:#2A3646; --line-strong:#3A4859;
-    --accent:#8AB0E4; --accent-ink:#0F1620; --accent-soft:#22314A;
-    --good:#3E9E7A; --good-ink:#FFFFFF; --good-soft:#16302A;
-    --warn:#E0A44A; --warn-soft:#33280F;
-    --bad:#C8544A; --bad-ink:#FFFFFF; --bad-soft:#3A1F1C;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.7);
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#0F1620; --grid:#1A2432; --surface:#18212E; --surface-2:#212C3C;
-  --ink:#E8EEF7; --ink-2:#AAB8CD; --ink-3:#77869E;
-  --line:#2A3646; --line-strong:#3A4859;
-  --accent:#8AB0E4; --accent-ink:#0F1620; --accent-soft:#22314A;
-  --good:#3E9E7A; --good-ink:#FFFFFF; --good-soft:#16302A;
+  color-scheme:dark;
+  --paper:#152238; --grid:#1E2D49; --surface:#1B2B47; --surface-2:#243656;
+  --ink:#E9EFF8; --ink-2:#AFBED4; --ink-3:#8496B1;
+  --line:#2B3D5C; --line-strong:#3B5075;
+  --accent:#8AB0E4; --accent-ink:#152238; --accent-soft:#25385C;
+  --accent-tint:rgba(138,176,228,.16);
+  --good:#4FBF95; --good-ink:#0F1620; --good-soft:#16302A;
   --warn:#E0A44A; --warn-soft:#33280F;
-  --bad:#C8544A; --bad-ink:#FFFFFF; --bad-soft:#3A1F1C;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.7);
+  --bad:#EE8375; --bad-ink:#0F1620; --bad-soft:#3A1F1C;
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -16px rgba(0,0,0,.7);
+  --r:12px;
 }
 
 /* Inhaltsboxen bleiben immer hell — die Kartenfläche mit Klasse, Datum und Namen,
@@ -65,6 +46,7 @@
   --good:#1C7A5B; --good-ink:#FFFFFF; --good-soft:#E2F2EB;
   --warn:#A9660A; --warn-soft:#F8EEDD;
   --bad:#B23A2E; --bad-ink:#FFFFFF; --bad-soft:#F9E7E4;
+  --accent-tint:#E1EAF7;
   color:var(--ink);
   background:var(--surface);
   /* damit auch native Bedienelemente (Datumsauswahl, Zahlenfelder) hell bleiben */
@@ -90,13 +72,21 @@ body{
 .inner{max-width:600px; margin:0 auto}
 
 header.top{
-  flex:0 0 auto; z-index:20; padding:8px 16px;
+  flex:0 0 auto; z-index:20; padding:0 16px;
+  height:53px; /* zwei Rasterzellen à 26px, die Trennlinie liegt auf der Rasterlinie */
   background:var(--surface); border-bottom:1px solid var(--line);
+  display:flex; align-items:center;
 }
 header.top .hw{
-  max-width:600px; margin:0 auto;
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  max-width:600px; margin:0 auto; width:100%;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
 }
+.hdrBtn{
+  flex:0 0 auto; width:40px; height:40px; border:0; background:transparent; color:var(--ink-3);
+  border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+}
+.hdrBtn svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.hdrBtn[aria-current="true"]{color:var(--accent); background:var(--accent-tint)}
 .brand{font-family:"Bricolage Grotesque", ui-sans-serif, sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em}
 .brand span{color:var(--accent)}
 .today{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; text-align:right; line-height:1.35}
@@ -149,6 +139,31 @@ select{-webkit-appearance:none; appearance:none; background-image:none}
 .tile .prog.full{color:var(--good); font-weight:600}
 .tile .prog.some{color:var(--warn); font-weight:600}
 .tile .prog.hot{color:var(--bad); font-weight:600}
+
+/* Mündliche Beteiligung: Name mit Saldo, daneben zwei Daumen */
+.names.oral{grid-template-columns:repeat(auto-fill, minmax(240px,1fr))}
+.tile.ora{align-items:stretch}
+.tile.ora .nmw{flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:7px; padding:10px 11px; font-size:15px}
+.tile.ora .nmw .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+/* Zähler des Halbjahres: positiv/negativ, ohne Note und ohne Saldo */
+.cnt2{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:0 0 auto}
+.cnt2 b{font-weight:600}
+.cnt2 b.p{color:var(--good)} .cnt2 b.n{color:var(--bad)}
+.cnt2.leer{color:var(--ink-3)} .cnt2.leer b{font-weight:400; color:var(--ink-3)}
+/* Klassenübersicht: Vokabeln, Mündlich, Hausaufgaben nebeneinander */
+.prog.kz{white-space:nowrap}
+.prog.kz .kl{color:var(--ink-3); font-weight:400; margin-right:1px}
+.prog.kz b{font-weight:600}
+.prog.kz b.p{color:var(--good)} .prog.kz b.n{color:var(--bad)}
+.tb{flex:0 0 52px; border:0; border-left:1px solid var(--line); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0}
+.tb svg{width:21px; height:21px; fill:currentColor}
+.tb.up{color:var(--good)} .tb.up:hover{background:var(--good-soft)}
+.tb.dn{color:var(--bad)} .tb.dn:hover{background:var(--bad-soft)}
+.tb:active{transform:scale(.92)}
+/* heute bereits bewertet: gewählte Richtung hervorgehoben, die andere zurückgenommen */
+.tb.on.up{background:var(--good-soft)}
+.tb.on.dn{background:var(--bad-soft)}
+.tb.off{opacity:.28}
 /* vergessene Hausaufgaben: ab 2 gelb, ab 3 rot — nur die Zahl wird eingefärbt,
    ohne Hintergrund und ohne zusätzlichen Abstand */
 .tile .prog b{font-weight:600}
@@ -232,7 +247,7 @@ button{font-family:inherit}
 .tag{display:inline-flex; align-items:center; font-size:11.5px; font-weight:600; letter-spacing:.04em; padding:3px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-2); text-transform:uppercase}
 .tag.demo{background:var(--warn-soft); color:var(--warn)}
 
-.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.stats{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
 .stat{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px}
 .stat b{display:block; font-family:"IBM Plex Mono", monospace; font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
 .stat span{font-size:12px; color:var(--ink-3)}
@@ -255,12 +270,13 @@ nav.tabs{
   border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom);
 }
 nav.tabs button{
-  border:0; background:transparent; color:var(--ink-3); padding:9px 4px 11px; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11.5px; font-weight:600;
+  border:0; background:transparent; color:var(--ink-3); padding:9px 2px 11px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:600;
+  letter-spacing:-.01em; white-space:nowrap;
   border-top:2px solid transparent; margin-top:-1px; position:relative;
 }
-nav.tabs button svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
-nav.tabs button[aria-current="true"]{color:var(--accent); border-top-color:var(--accent)}
+nav.tabs button svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+nav.tabs button[aria-current="true"]{color:var(--accent); border-top-color:var(--accent); background:var(--accent-tint)}
 nav.tabs button .dot{position:absolute; top:7px; right:calc(50% - 20px); width:8px; height:8px; border-radius:50%; background:var(--bad); display:none}
 nav.tabs button.running .dot{display:block}
 
@@ -304,6 +320,9 @@ dialog .df{padding:12px 16px; border-top:1px solid var(--line); display:flex; ga
 .hstatus{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3)}
 hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 .hidden{display:none !important}
+.cfgH{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:16px; letter-spacing:-.01em}
+.row3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.row3 input{width:100%}
 .scaleRow{display:grid; grid-template-columns:repeat(5,1fr); gap:7px}
 .scaleRow label{font-size:11px; color:var(--ink-3); font-weight:600; display:block; text-align:center; margin-bottom:3px}
 .scaleRow input{padding:8px 4px; text-align:center; min-height:44px}
@@ -337,6 +356,9 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
   <div class="hw">
     <div class="brand">Klassen<span>journal</span></div>
     <div class="today" id="todayLbl"></div>
+    <button class="hdrBtn" type="button" id="hdr-export" aria-label="Export und Einstellungen">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5L12 4l3.5 3.5"/><path d="M4.5 14v4.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+    </button>
   </div>
 </header>
 
@@ -417,6 +439,34 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
     </div>
   </section>
 
+  <!-- ===== MÜNDLICH ===== -->
+  <section id="v-muendlich" class="hidden">
+    <h2 class="vt">Mündliche Beteiligung</h2>
+    <div class="stack">
+      <div class="card stack">
+        <div>
+          <span class="label">Datum <span class="lblDay" id="mu-weekday"></span></span>
+          <div class="dateRow">
+            <button class="dnav" type="button" id="mu-prev" aria-label="Ein Tag zurück">‹</button>
+            <input type="date" id="mu-date">
+            <button class="dnav" type="button" id="mu-next" aria-label="Ein Tag vor">›</button>
+            <button class="dtoday" type="button" id="mu-today">Heute</button>
+          </div>
+        </div>
+        <div>
+          <span class="label">Klasse &amp; Schüler</span>
+          <div class="chips" id="mu-classes"></div>
+          <div class="names oral" id="mu-students" style="margin-top:9px"></div>
+        </div>
+        <button class="btn ghost wide" id="mu-undo">Letzte Bewertung zurücknehmen</button>
+      </div>
+      <div>
+        <span class="label">Einträge am gewählten Tag</span>
+        <div class="entries" id="mu-list"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== HAUSAUFGABEN ===== -->
   <section id="v-hausaufgaben" class="hidden">
     <h2 class="vt">Vergessene Hausaufgaben</h2>
@@ -460,11 +510,12 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 
   <!-- ===== EXPORT ===== -->
   <section id="v-export" class="hidden">
-    <h2 class="vt">Tagesexport</h2>
+    <h2 class="vt">Export &amp; Einstellungen</h2>
     <div class="stack">
       <div class="stats">
         <div class="stat"><b id="st-v">0</b><span>Abfragen</span></div>
-        <div class="stat"><b id="st-h">0</b><span>vergessene HA</span></div>
+        <div class="stat"><b id="st-m">0</b><span>Mündlich</span></div>
+        <div class="stat"><b id="st-h">0</b><span>Vergessene HA</span></div>
         <div class="stat"><b id="st-s">0</b><span>Schüler</span></div>
       </div>
       <button class="btn primary wide" id="ex-xlsx">Excel-Datei erzeugen &amp; teilen</button>
@@ -474,73 +525,74 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
         <div class="gradeMeta" id="ex-last">noch nie</div>
       </div>
 
-      <details class="help">
-        <summary>Täglich automatisch nach OneDrive</summary>
-        <div class="body">
-          <p>Eine Web-App auf dem iPhone darf im Hintergrund nichts hochladen — das lässt iOS nicht zu. Der verlässliche Weg ist eine Erinnerung plus zwei Taps:</p>
-          <ol>
-            <li>Kurzbefehle-App → <b>Automation</b> → <b>Tageszeit</b>, z. B. werktags 16:30.</li>
-            <li>Aktion <b>„URL öffnen“</b> mit der Adresse dieser App, <b>„Sofort ausführen“</b> aktivieren.</li>
-            <li>App öffnet sich → <b>Excel-Datei erzeugen &amp; teilen</b> → <b>In Dateien sichern</b> → OneDrive-Ordner → vorhandene Datei ersetzen.</li>
-          </ol>
-          <p>Der Export enthält immer den kompletten Datenbestand. Überschreiben ist deshalb richtig und kann nichts verlieren.</p>
-        </div>
-      </details>
+      <div class="card stack">
+        <div class="cfgH">Sicherung &amp; Wiederherstellung</div>
+        <p class="gradeMeta" style="margin:0">Die Sicherung enthält alles: Klassen, Abfragen, mündliche Bewertungen, Hausaufgaben. Beim Einlesen wird zusammengeführt, nicht ersetzt.</p>
+        <button class="btn wide" id="bk-save">Sicherung erstellen</button>
+        <button class="btn wide" id="bk-load">Sicherung einlesen</button>
+        <input type="file" id="bk-file" accept=".json,application/json" hidden>
+        <div class="gradeMeta" id="bk-last">noch nie gesichert</div>
+      </div>
 
       <details class="help">
-        <summary>Vollautomatisch ohne Tippen</summary>
+        <summary>Synchronisation mit OneDrive</summary>
         <div class="body">
-          <p>Ohne Handgriff geht es nur über die Microsoft-Graph-API: App-Registrierung in Entra ID, Anmeldung per MSAL in der Web-App, Upload per <code>PUT /me/drive/items/…/content</code>. Danach genügt ein Öffnen der App, der Rest läuft von selbst.</p>
-          <p>Das braucht Rechte in eurem Tenant und eine Freigabe für personenbezogene Schülerdaten.</p>
+          <p>In Vorbereitung: Die App legt zwei Dateien in einem eigenen Ordner in OneDrive ab — den Datenbestand und diese Excel-Datei, bei jedem Abgleich neu erzeugt. Abgeglichen wird beim Öffnen und nach jeder Änderung. Ohne Netz sammelt die App und überträgt später.</p>
+          <p>Bis dahin ist der Knopf oben der Weg: Datei erzeugen, im Teilen-Menü in OneDrive sichern, die vorhandene ersetzen. Der Export enthält immer den kompletten Bestand — Überschreiben kann nichts verlieren.</p>
         </div>
       </details>
-
-      <hr class="sep">
 
       <div class="card stack">
+        <div class="cfgH">Vokabelabfrage</div>
+        <div class="row3">
+          <div><span class="label">Vokabeln je Abfrage</span><input type="number" id="set-size" min="1" max="50" inputmode="numeric"></div>
+          <div><span class="label">Abfragen je HJ</span><input type="number" id="set-runs" min="1" max="10" inputmode="numeric"></div>
+          <div><span class="label">Gleichzeitig</span><input type="number" id="set-seats" min="1" max="8" inputmode="numeric"></div>
+        </div>
         <div>
-          <span class="label">Notenschlüssel — ab wie viel Prozent?</span>
+          <span class="label">Note ab wie viel Prozent</span>
           <div class="scaleRow">
-            <div><label for="sc1">Note 1</label><input type="number" id="sc1" min="0" max="100" inputmode="numeric"></div>
-            <div><label for="sc2">Note 2</label><input type="number" id="sc2" min="0" max="100" inputmode="numeric"></div>
-            <div><label for="sc3">Note 3</label><input type="number" id="sc3" min="0" max="100" inputmode="numeric"></div>
-            <div><label for="sc4">Note 4</label><input type="number" id="sc4" min="0" max="100" inputmode="numeric"></div>
-            <div><label for="sc5">Note 5</label><input type="number" id="sc5" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc1">1</label><input type="number" id="sc1" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc2">2</label><input type="number" id="sc2" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc3">3</label><input type="number" id="sc3" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc4">4</label><input type="number" id="sc4" min="0" max="100" inputmode="numeric"></div>
+            <div><label for="sc5">5</label><input type="number" id="sc5" min="0" max="100" inputmode="numeric"></div>
           </div>
           <p class="gradeMeta" id="sc-preview" style="margin:8px 0 0"></p>
         </div>
-        <div class="row">
-          <div class="f1">
-            <span class="label">Vokabeln je Abfrage</span>
-            <input type="number" id="set-size" min="1" max="50" inputmode="numeric">
-          </div>
-          <div class="f1">
-            <span class="label">Abfragen je Halbjahr</span>
-            <input type="number" id="set-runs" min="1" max="10" inputmode="numeric">
-          </div>
-        </div>
-        <div class="row">
-          <div class="f1">
-            <span class="label">Schüler gleichzeitig</span>
-            <input type="number" id="set-seats" min="1" max="8" inputmode="numeric">
-          </div>
-          <div class="f1">
-            <span class="label">2. Halbjahr beginnt im</span>
-            <select id="set-hj2">
-              <option value="1">Januar</option>
-              <option value="2">Februar</option>
-              <option value="3">März</option>
-            </select>
-          </div>
-        </div>
-        <p class="gradeMeta" style="margin:0">Aktuelles Halbjahr: <span id="set-termnow"></span></p>
       </div>
+
+      <div class="card stack">
+        <div class="cfgH">Mündliche Beteiligung</div>
+        <div>
+          <span class="label">Note ab welchem Saldo</span>
+          <div class="scaleRow">
+            <div><label for="os1">1</label><input type="number" id="os1" min="-20" max="20" inputmode="numeric"></div>
+            <div><label for="os2">2</label><input type="number" id="os2" min="-20" max="20" inputmode="numeric"></div>
+            <div><label for="os3">3</label><input type="number" id="os3" min="-20" max="20" inputmode="numeric"></div>
+            <div><label for="os4">4</label><input type="number" id="os4" min="-20" max="20" inputmode="numeric"></div>
+            <div><label for="os5">5</label><input type="number" id="os5" min="-20" max="20" inputmode="numeric"></div>
+          </div>
+          <p class="gradeMeta" id="os-preview" style="margin:8px 0 0"></p>
+        </div>
+      </div>
+
+      <div class="card stack">
+        <div class="cfgH">Vergessene Hausaufgaben</div>
+        <div class="row3">
+          <div><span class="label">Gelb ab</span><input type="number" id="set-hwWarn" min="1" max="20" inputmode="numeric"></div>
+          <div><span class="label">Rot ab</span><input type="number" id="set-hwAlert" min="1" max="20" inputmode="numeric"></div>
+          <div></div>
+        </div>
+      </div>
+
+      <p class="gradeMeta" style="margin:0 2px">Halbjahre fest: 1. HJ August–Januar, 2. HJ Februar–Juli · aktuell <span id="set-termnow"></span></p>
 
       <details class="help">
         <summary>Daten &amp; Datenschutz</summary>
         <div class="body">
-          <p>Alle Einträge liegen ausschließlich im Speicher dieses Browsers auf diesem Gerät. Sie gehen nirgendwo hin, außer du erzeugst den Export. Löschst du die Browserdaten oder wechselst das Gerät, sind sie weg — deshalb regelmäßig exportieren.</p>
-          <p>Klarnamen plus Leistungsdaten sind personenbezogene Daten nach Art. 4 DSGVO. Vor dem Ablegen in OneDrive/SharePoint gehört das mit Schulleitung bzw. schulischem Datenschutzbeauftragten abgeklärt — dienstlicher Tenant statt privatem Konto.</p>
+          <p>Alle Einträge liegen derzeit ausschließlich im Speicher dieses Geräts. Sie gehen nirgendwo hin, außer du erzeugst den Export. Deshalb regelmäßig sichern.</p>
+          <p>Klarnamen plus Leistungsdaten sind personenbezogene Daten nach Art. 4 DSGVO. Vor dem Ablegen in einer Cloud gehört das mit Schulleitung bzw. Datenschutzbeauftragtem abgeklärt. Kürzel statt Klarnamen lösen die Frage weitgehend.</p>
         </div>
       </details>
 
@@ -556,6 +608,10 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M8 4v16"/><path d="M11.5 9.5h4"/><path d="M11.5 13.5h4"/></svg>
     Vokabeln
   </button>
+  <button data-view="muendlich">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 4z"/><path d="M8.5 10h7"/></svg>
+    Mündlich
+  </button>
   <button data-view="hausaufgaben">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9.5 12.5l1.8 1.8 3.4-3.4"/><path d="M9.5 17h5"/></svg>
     Hausaufgaben
@@ -563,10 +619,6 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
   <button data-view="klassen">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17.5" cy="9.5" r="2.2"/><path d="M15 18.5a4.6 4.6 0 0 1 5.8-3"/></svg>
     Klassen
-  </button>
-  <button data-view="export">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5L12 4l3.5 3.5"/><path d="M4.5 14v4.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
-    Export
   </button>
 </nav>
 
@@ -603,6 +655,17 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
   <div class="df">
     <button class="btn ghost" id="dlgClassCancel">Abbrechen</button>
     <button class="btn primary" id="dlgClassSave">Speichern</button>
+  </div>
+</dialog>
+
+<dialog id="dlgNote">
+  <div class="dh"><div class="t" id="dlgNoteT">Bemerkung</div><div class="s" id="dlgNoteS">–</div></div>
+  <div class="db">
+    <input type="text" id="dlgNoteV" placeholder="z. B. hat den Konjunktiv erklärt" autocomplete="off">
+  </div>
+  <div class="df">
+    <button class="btn ghost" id="dlgNoteCancel">Abbrechen</button>
+    <button class="btn primary" id="dlgNoteSave">Speichern</button>
   </div>
 </dialog>
 
@@ -651,6 +714,12 @@ function shiftDate(id, delta){
   var d = new Date(+p[0], +p[1] - 1, +p[2]);
   d.setDate(d.getDate() + delta);
   el.value = iso(d);
+}
+/* Ein Datum für alle Reiter: jede Änderung schreibt es in alle drei Felder. */
+var DATE_IDS = ["vk-date","mu-date","ha-date"];
+function setDate(v){
+  DATE_IDS.forEach(function(id){ var el = $(id); if (el) el.value = v; });
+  refreshAll();
 }
 function paintDateRow(dateId, dayId, todayId){
   var v = $(dateId).value, p = String(v).split("-"), lbl = "";
@@ -707,12 +776,13 @@ function toast(msg){
 
 /* ---------- Zustand ---------- */
 function defaults(){
-  return { scale:[92,81,67,50,30], setSize:6, setRuns:2, seats:4, hj2Start:2, lastExport:null };
+  return { scale:[92,81,67,50,30], oralScale:[3,2,1,0,-1], setSize:6, setRuns:2, seats:4,
+           hwWarn:2, hwAlert:3, lastExport:null, lastBackup:null };
 }
 function seed(){
   var names = "Amelie Brandt,Jonas Deger,Merve Kaya,Noah Riedl,Pia Sommer,Tarek Öz,Lena Vogt,Finn Wieland".split(",");
   return {
-    settings: defaults(), session: null,
+    settings: defaults(), session: null, oral: [],
     classes: [{ id:"demo-7b", name:"7b Englisch", demo:true,
       students: names.map(function(n){ return { id:uid(), name:n }; }).sort(byName) }],
     vocab: [], homework: []
@@ -734,7 +804,9 @@ function load(){
   if (!S.settings) S.settings = d;
   Object.keys(d).forEach(function(k){ if (S.settings[k] === undefined || S.settings[k] === null) S.settings[k] = d[k]; });
   if (!S.settings.scale || S.settings.scale.length !== 5) S.settings.scale = d.scale;
+  if (!S.settings.oralScale || S.settings.oralScale.length !== 5) S.settings.oralScale = d.oralScale;
   if (S.session === undefined) S.session = null;
+  if (!Array.isArray(S.oral)) S.oral = [];
   S.classes.sort(byClass);
   S.classes.forEach(function(c){ c.students.sort(byName); });
   S.vocab.forEach(function(v){ if (!v.max) v.max = S.settings.setSize; });
@@ -749,7 +821,8 @@ function cls(id){ for (var i=0;i<S.classes.length;i++) if (S.classes[i].id===id)
 function termOf(dateStr){
   var p = String(dateStr).split("-");
   if (p.length !== 3) return { key:"?", label:"unbekannt", half:0 };
-  var y = +p[0], m = +p[1], start = S.settings.hj2Start, sy, half;
+  /* Fest: 1. Halbjahr August–Januar, 2. Halbjahr Februar–Juli */
+  var y = +p[0], m = +p[1], start = 2, sy, half;
   if (m >= start && m <= 7){ sy = y - 1; half = 2; }
   else if (m >= 8){ sy = y; half = 1; }
   else { sy = y - 1; half = 1; }
@@ -768,12 +841,35 @@ function vocabIn(sid, termKey){
 function hwIn(sid, termKey){
   return S.homework.filter(function(h){ return h.studentId === sid && termOf(h.date).key === termKey; });
 }
+/* Mündliche Beteiligung eines Schülers in einem Halbjahr.
+   Die sechs Regeln aus der Vorgabe sind ein Zahlenstrahl: 3 pro→1, 2→2, 1→3, 0→4,
+   1 contra→5, 2 contra→6. Das ist genau Note = 4 − Saldo, begrenzt auf 1 bis 6.
+   Damit ist auch der gemischte Fall (pro und contra) eindeutig geregelt. */
+function oralIn(sid, termKey){
+  return S.oral.filter(function(o){ return o.studentId === sid && termOf(o.date).key === termKey; })
+    .sort(function(a,b){ return a.date.localeCompare(b.date) || a.ts.localeCompare(b.ts); });
+}
+function oralGradeFor(saldo){
+  var sc = S.settings.oralScale;
+  for (var i = 0; i < 5; i++) if (saldo >= sc[i]) return i + 1;
+  return 6;
+}
+function oralGrade(entries){
+  var pro = 0, con = 0;
+  entries.forEach(function(o){ if (o.value > 0) pro++; else con++; });
+  var saldo = pro - con;
+  return { pro:pro, con:con, saldo:saldo, count:entries.length, grade: oralGradeFor(saldo) };
+}
+
 /* Ampel für vergessene Hausaufgaben: ab 2 gelb, ab 3 rot */
-function hwClass(n){ return n >= 3 ? "hot" : (n >= 2 ? "some" : ""); }
+function hwClass(n){
+  return n >= S.settings.hwAlert ? "hot" : (n >= S.settings.hwWarn ? "some" : "");
+}
 /* Nach jeder Datenänderung alle Ansichten neu zeichnen — auch die gerade nicht sichtbaren,
    sonst zeigt ein Reiter im Hintergrund noch alte Zahlen. */
 function refreshAll(){
   renderVokabel();
+  renderMuendlich();
   renderHa();
   renderClasses();
   renderExport();
@@ -793,15 +889,16 @@ function termGrade(entries){
 var sel = { cls:null, vkPicked:{}, haStudents:{} };
 function pickClass(id){
   sel.cls = id; sel.vkPicked = {}; sel.haStudents = {}; klOpen = null;
-  renderVokabel(); renderHa(); renderClasses();
+  renderVokabel(); renderMuendlich(); renderHa(); renderClasses();
 }
 function switchView(name){
-  ["vokabel","hausaufgaben","klassen","export"].forEach(function(v){
+  ["vokabel","muendlich","hausaufgaben","klassen","export"].forEach(function(v){
     $("v-"+v).classList.toggle("hidden", v !== name);
   });
   Array.prototype.forEach.call($("tabs").children, function(b){
     b.setAttribute("aria-current", b.dataset.view === name ? "true" : "false");
   });
+  $("hdr-export").setAttribute("aria-current", name === "export" ? "true" : "false");
   /* Der Inhalt scrollt in einem eigenen Rahmen — window.scrollTo greift hier nicht. */
   var app = document.querySelector(".app"); if (app) app.scrollTop = 0;
   if (name === "export") renderExport();
@@ -809,6 +906,11 @@ function switchView(name){
 }
 $("tabs").addEventListener("click", function(e){
   var b = e.target.closest("button[data-view]"); if (b) switchView(b.dataset.view);
+});
+/* Der Knopf schaltet hin und zurück — sonst gäbe es aus dem Export keinen Weg heraus
+   außer über einen Reiter, den man vielleicht gar nicht wollte. */
+$("hdr-export").addEventListener("click", function(){
+  switchView($("v-export").classList.contains("hidden") ? "export" : "vokabel");
 });
 
 function renderClassChips(host, active, onPick){
@@ -896,10 +998,10 @@ function renderVkList(){
     host.appendChild(el);
   });
 }
-$("vk-date").addEventListener("change", renderVokabel);
-$("vk-prev").addEventListener("click", function(){ shiftDate("vk-date", -1); renderVokabel(); });
-$("vk-next").addEventListener("click", function(){ shiftDate("vk-date", 1); renderVokabel(); });
-$("vk-today").addEventListener("click", function(){ $("vk-date").value = iso(); renderVokabel(); });
+$("vk-date").addEventListener("change", function(){ setDate($("vk-date").value); });
+$("vk-prev").addEventListener("click", function(){ shiftDate("vk-date", -1); setDate($("vk-date").value); });
+$("vk-next").addEventListener("click", function(){ shiftDate("vk-date", 1); setDate($("vk-date").value); });
+$("vk-today").addEventListener("click", function(){ setDate(iso()); });
 
 /* ---- Abfrage starten ---- */
 $("vk-start").addEventListener("click", async function(){
@@ -1108,6 +1210,119 @@ $("mn-save").addEventListener("click", function(){
   toast(st.name + ": " + pts + "/" + mx + " eingetragen");
 });
 
+/* ================= MÜNDLICH ================= */
+var THUMB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10h4v11H2z"/>' +
+  '<path d="M7 21V10l4.6-6.6a1 1 0 0 1 1.7.3l.3.9c.2.6.2 1.2 0 1.8L12.7 9H19a2 2 0 0 1 2 2.3l-1 6.4A3 3 0 0 1 17 21z"/></svg>';
+var oralUndo = [];
+
+function oralToday(sid){
+  var d = $("mu-date").value;
+  return S.oral.filter(function(o){ return o.studentId === sid && o.date === d; })[0] || null;
+}
+function oralTile(st, c, tk){
+  var g = oralGrade(oralIn(st.id, tk));
+  var heute = oralToday(st.id);
+  var wrap = document.createElement("div");
+  wrap.className = "tile ora";
+  var nm = document.createElement("div");
+  nm.className = "nmw";
+  nm.innerHTML = '<span class="nm">' + esc(st.name) + '</span>' +
+    '<span class="cnt2' + (g.count ? '' : ' leer') + '"><b class="p">' + g.pro + '</b>/<b class="n">' + g.con + '</b></span>';
+  wrap.appendChild(nm);
+  [[1,"up","Positiv für "],[-1,"dn","Negativ für "]].forEach(function(k){
+    var b = document.createElement("button");
+    b.className = "tb " + k[1] +
+      (heute ? (heute.value === k[0] ? " on" : " off") : "");
+    b.type = "button";
+    b.setAttribute("aria-label", k[2] + st.name);
+    b.innerHTML = THUMB;
+    if (k[0] < 0) b.querySelector("svg").style.transform = "rotate(180deg)";
+    b.addEventListener("click", function(){ logOral(st, c, k[0]); });
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+function logOral(st, c, value){
+  var d = $("mu-date").value;
+  var schon = oralToday(st.id);
+  if (schon){
+    toast(st.name + " ist am " + deDate(d) + " schon " +
+      (schon.value > 0 ? "positiv" : "negativ") + " bewertet — unten in der Liste änderbar");
+    return;
+  }
+  var e = { id:uid(), date:d, classId:c.id, classSnap:c.name, studentId:st.id, studentSnap:st.name,
+            value:value, note:"", ts:new Date().toISOString() };
+  S.oral.push(e);
+  oralUndo.push(e.id);
+  save();
+  var g = oralGrade(oralIn(st.id, termOf(d).key));
+  renderMuendlich(); renderClasses();
+  toast(st.name + ": " + (value > 0 ? "positiv" : "negativ") +
+    " · Halbjahr " + g.pro + " positiv / " + g.con + " negativ");
+}
+function renderMuendlich(){
+  renderClassChips($("mu-classes"), sel.cls, pickClass);
+  var c = cls(sel.cls), host = $("mu-students");
+  host.innerHTML = "";
+  var tk = termOf($("mu-date").value).key;
+  if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
+  else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
+  else c.students.forEach(function(st){ host.appendChild(oralTile(st, c, tk)); });
+  $("mu-undo").disabled = !oralUndo.length;
+  paintDateRow("mu-date", "mu-weekday", "mu-today");
+  renderMuList();
+}
+function renderMuList(){
+  var d = $("mu-date").value;
+  var rows = S.oral.filter(function(o){ return o.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
+  var host = $("mu-list"); host.innerHTML = "";
+  if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
+  rows.forEach(function(o){
+    var el = document.createElement("div"); el.className = "entry";
+    el.innerHTML = '<div class="stripe' + (o.value > 0 ? '' : ' bad') + '"></div>' +
+      '<div class="grow"><div class="who">' + esc(o.studentSnap) + '</div>' +
+      '<div class="det">' + esc(o.classSnap) + ' · ' + (o.value > 0 ? 'positiv' : 'negativ') +
+      (o.note ? ' · ' + esc(o.note) : ' · <em>Bemerkung hinzufügen</em>') + '</div></div>' +
+      '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+    el.querySelector(".grow").addEventListener("click", function(){ openNote(o); });
+    el.querySelector(".x").addEventListener("click", async function(){
+      var ok = await ask("Eintrag löschen",
+        esc(o.studentSnap) + " · " + (o.value > 0 ? "positiv" : "negativ") + " vom " + deDate(o.date) +
+        " entfernen? Die Note für das Halbjahr rechnet sich danach neu.", "Löschen", true);
+      if (!ok) return;
+      S.oral = S.oral.filter(function(x){ return x.id !== o.id; });
+      oralUndo = oralUndo.filter(function(x){ return x !== o.id; });
+      save(); refreshAll(); toast("Eintrag gelöscht");
+    });
+    host.appendChild(el);
+  });
+}
+$("mu-date").addEventListener("change", function(){ setDate($("mu-date").value); });
+$("mu-prev").addEventListener("click", function(){ shiftDate("mu-date", -1); setDate($("mu-date").value); });
+$("mu-next").addEventListener("click", function(){ shiftDate("mu-date", 1); setDate($("mu-date").value); });
+$("mu-today").addEventListener("click", function(){ setDate(iso()); });
+$("mu-undo").addEventListener("click", function(){
+  var id = oralUndo.pop(); if (!id) return;
+  var e = S.oral.filter(function(x){ return x.id === id; })[0];
+  S.oral = S.oral.filter(function(x){ return x.id !== id; });
+  save(); refreshAll();
+  toast(e ? e.studentSnap + " zurückgenommen" : "Zurückgenommen");
+});
+
+/* Bemerkung nachtragen */
+var noteTarget = null;
+function openNote(o){
+  noteTarget = o;
+  $("dlgNoteS").textContent = o.studentSnap + " · " + (o.value > 0 ? "positiv" : "negativ") + " · " + deDate(o.date);
+  $("dlgNoteV").value = o.note || "";
+  $("dlgNote").showModal();
+}
+$("dlgNoteCancel").addEventListener("click", function(){ $("dlgNote").close(); });
+$("dlgNoteSave").addEventListener("click", function(){
+  if (noteTarget){ noteTarget.note = $("dlgNoteV").value.trim(); save(); refreshAll(); }
+  $("dlgNote").close(); toast("Bemerkung gespeichert");
+});
+
 /* ================= HAUSAUFGABEN ================= */
 function renderHa(){
   renderClassChips($("ha-classes"), sel.cls, pickClass);
@@ -1150,10 +1365,10 @@ function renderHaList(){
     host.appendChild(el);
   });
 }
-$("ha-date").addEventListener("change", renderHa);
-$("ha-prev").addEventListener("click", function(){ shiftDate("ha-date", -1); renderHa(); });
-$("ha-next").addEventListener("click", function(){ shiftDate("ha-date", 1); renderHa(); });
-$("ha-today").addEventListener("click", function(){ $("ha-date").value = iso(); renderHa(); });
+$("ha-date").addEventListener("change", function(){ setDate($("ha-date").value); });
+$("ha-prev").addEventListener("click", function(){ shiftDate("ha-date", -1); setDate($("ha-date").value); });
+$("ha-next").addEventListener("click", function(){ shiftDate("ha-date", 1); setDate($("ha-date").value); });
+$("ha-today").addEventListener("click", function(){ setDate(iso()); });
 $("ha-save").addEventListener("click", function(){
   var c = cls(sel.cls); if (!c) return;
   var ids = Object.keys(sel.haStudents); if (!ids.length) return;
@@ -1180,10 +1395,12 @@ function renderHistory(){
   var st = histStudent, c = histClass; if (!st) return;
   var vs = S.vocab.filter(function(v){ return v.studentId === st.id; });
   var hs = S.homework.filter(function(h){ return h.studentId === st.id; });
+  var os = S.oral.filter(function(o){ return o.studentId === st.id; });
   $("dlgHistName").textContent = st.name;
-  $("dlgHistSub").textContent = (c ? c.name + " · " : "") + vs.length + " Abfragen · " + hs.length + " vergessene Hausaufgaben";
+  $("dlgHistSub").textContent = (c ? c.name + " · " : "") + vs.length + " Abfragen · " +
+    os.length + " mündlich · " + hs.length + " vergessene Hausaufgaben";
   var keys = {}, order = [];
-  vs.concat(hs).forEach(function(e){
+  vs.concat(hs).concat(os).forEach(function(e){
     var t = termOf(e.date);
     if (!keys[t.key]){ keys[t.key] = t; order.push(t.key); }
   });
@@ -1197,12 +1414,14 @@ function renderHistory(){
     var term = keys[k];
     var tv = vs.filter(function(v){ return termOf(v.date).key === k; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
     var th = hs.filter(function(h){ return termOf(h.date).key === k; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
-    var g = termGrade(tv);
+    var to = os.filter(function(o){ return termOf(o.date).key === k; }).sort(function(a,b){ return b.date.localeCompare(a.date); });
+    var g = termGrade(tv), og = oralGrade(to);
     var wrap = document.createElement("div"); wrap.className = "termWrap";
     var head = document.createElement("div"); head.className = "termHead";
     head.innerHTML = '<div class="tn">' + esc(term.label) + '<div class="hstatus">' +
       (tv.length ? g.points + "/" + g.base + " Vokabeln · " + g.pct.toFixed(1).replace(".", ",") + " % · " +
         (g.complete ? "vollständig" : g.runs + " von " + S.settings.setRuns + " Abfragen") : "keine Abfrage") +
+      (to.length ? " · mündlich " + og.pro + " pro / " + og.con + " contra · Note " + og.grade : "") +
       (th.length ? " · " + th.length + "× HA vergessen" : "") + '</div></div>' +
       (tv.length ? '<div class="tg g' + g.grade + (g.complete ? '' : ' prov') + '">' + g.grade + '</div>' : '');
     wrap.appendChild(head);
@@ -1221,6 +1440,22 @@ function renderHistory(){
           " richtigen Vokabeln entfernen? Die Halbjahresnote rechnet sich danach neu.", "Löschen", true);
         if (!ok) return;
         S.vocab = S.vocab.filter(function(x){ return x.id !== v.id; });
+        save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
+      });
+      list.appendChild(el);
+    });
+    to.forEach(function(o){
+      var el = document.createElement("div"); el.className = "entry";
+      el.innerHTML = '<div class="stripe' + (o.value > 0 ? '' : ' bad') + '"></div>' +
+        '<div class="grow"><div class="who">' + deDate(o.date) +
+        ' <span style="font-weight:400; color:var(--ink-2)">mündlich ' + (o.value > 0 ? 'positiv' : 'negativ') + '</span></div>' +
+        '<div class="det">' + (o.note ? esc(o.note) : '<em>ohne Bemerkung</em>') + '</div></div>' +
+        '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+      el.querySelector(".x").addEventListener("click", async function(){
+        var ok = await ask("Eintrag löschen",
+          "Mündliche Bewertung vom " + deDate(o.date) + " entfernen? Die Note rechnet sich danach neu.", "Löschen", true);
+        if (!ok) return;
+        S.oral = S.oral.filter(function(x){ return x.id !== o.id; });
         save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
       });
       list.appendChild(el);
@@ -1277,13 +1512,19 @@ function renderClasses(){
 
     if (open){
       var body = document.createElement("div"); body.className = "klBody";
-      var grid = document.createElement("div"); grid.className = "names";
+      var grid = document.createElement("div"); grid.className = "names oral";
       if (!c.students.length) grid.innerHTML = '<div class="empty">noch keine Namen</div>';
       else c.students.forEach(function(st){
         var n = S.vocab.filter(function(v){ return v.studentId === st.id; }).length;
         var m = S.homework.filter(function(h){ return h.studentId === st.id; }).length;
+        var o = S.oral.filter(function(x){ return x.studentId === st.id; });
+        var pro = o.filter(function(x){ return x.value > 0; }).length;
         grid.appendChild(studentTile(st, c, false,
-          '<span class="prog">' + n + '·<b class="' + hwClass(m) + '">' + m + '</b></span>',
+          '<span class="prog kz">' +
+            '<span class="kl">V</span>' + n +
+            ' <span class="kl">M</span><b class="p">' + pro + '</b>/<b class="n">' + (o.length - pro) + '</b>' +
+            ' <span class="kl">H</span><b class="' + hwClass(m) + '">' + m + '</b>' +
+          '</span>',
           function(){ openHistory(st, c); }));
       });
       body.appendChild(grid);
@@ -1345,6 +1586,7 @@ $("dlgClassSave").addEventListener("click", function(){
 /* ================= EINSTELLUNGEN & EXPORT ================= */
 function renderExport(){
   $("st-v").textContent = S.vocab.length;
+  $("st-m").textContent = S.oral.length;
   $("st-h").textContent = S.homework.length;
   var n = 0; S.classes.forEach(function(c){ n += c.students.length; });
   $("st-s").textContent = n;
@@ -1352,14 +1594,23 @@ function renderExport(){
     ? new Date(S.settings.lastExport).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
     : "noch nie";
   for (var i = 0; i < 5; i++) $("sc" + (i+1)).value = S.settings.scale[i];
+  for (var j = 0; j < 5; j++) $("os" + (j+1)).value = S.settings.oralScale[j];
   $("set-size").value = S.settings.setSize;
   $("set-runs").value = S.settings.setRuns;
   $("set-seats").value = S.settings.seats;
-  $("set-hj2").value = String(S.settings.hj2Start);
+  $("set-hwWarn").value = S.settings.hwWarn;
+  $("set-hwAlert").value = S.settings.hwAlert;
   $("set-termnow").textContent = termOf(iso()).label;
+  $("bk-last").textContent = S.settings.lastBackup
+    ? "zuletzt gesichert " + new Date(S.settings.lastBackup).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
+    : "noch nie gesichert";
   var total = S.settings.setSize * S.settings.setRuns, parts = [];
   for (var p = total; p >= 0; p--) parts.push(p + "→" + gradeFor(Math.round(p / total * 1000) / 10));
   $("sc-preview").textContent = "Bei " + total + " Vokabeln: " + parts.join("  ");
+  var lo = Math.min.apply(null, S.settings.oralScale) - 1, hi = Math.max.apply(null, S.settings.oralScale);
+  var op = [];
+  for (var q = hi; q >= lo; q--) op.push((q > 0 ? "+" + q : q) + "→" + oralGradeFor(q));
+  $("os-preview").textContent = "Saldo: " + op.join("  ");
 }
 ["sc1","sc2","sc3","sc4","sc5"].forEach(function(id, i){
   $(id).addEventListener("change", function(){
@@ -1368,6 +1619,15 @@ function renderExport(){
     S.settings.scale[i] = v; save(); renderExport(); renderVokabel();
   });
 });
+["os1","os2","os3","os4","os5"].forEach(function(id, i){
+  $(id).addEventListener("change", function(){
+    var v = parseInt($(id).value, 10);
+    if (!isFinite(v) || v < -20 || v > 20){ $(id).value = S.settings.oralScale[i]; return; }
+    S.settings.oralScale[i] = v; save(); renderExport(); refreshAll();
+  });
+});
+numSetting("set-hwWarn", "hwWarn", 1, 20);
+numSetting("set-hwAlert", "hwAlert", 1, 20);
 function numSetting(id, key, lo, hi){
   $(id).addEventListener("change", function(){
     var v = parseInt(this.value, 10);
@@ -1379,9 +1639,6 @@ function numSetting(id, key, lo, hi){
 numSetting("set-size", "setSize", 1, 50);
 numSetting("set-runs", "setRuns", 1, 10);
 numSetting("set-seats", "seats", 1, 8);
-$("set-hj2").addEventListener("change", function(){
-  S.settings.hj2Start = parseInt(this.value, 10); save(); renderExport(); renderVokabel(); renderHa();
-});
 $("ex-wipe").addEventListener("click", async function(){
   var ok = await ask("Alle Daten löschen",
     "Klassen, Abfragen und Hausaufgaben werden unwiderruflich entfernt. " +
@@ -1390,8 +1647,8 @@ $("ex-wipe").addEventListener("click", async function(){
   try { localStorage.removeItem(KEY); } catch(e){}
   S = null; load(); save();
   sel = { cls:S.classes.length ? S.classes[0].id : null, vkPicked:{}, haStudents:{} };
-  klOpen = null;
-  renderVokabel(); renderHa(); renderClasses(); renderExport(); toast("Alle Daten gelöscht");
+  klOpen = null; oralUndo = [];
+  refreshAll(); toast("Alle Daten gelöscht");
 });
 
 /* ---------- xlsx-Writer (ohne Bibliothek) ---------- */
@@ -1558,15 +1815,29 @@ function buildSheets(){
     vRows.push([{t:"d",v:v.date}, termOf(v.date).label, v.classSnap, v.studentSnap, v.lesson || "",
       v.points, v.max, v.live ? "live" : "manuell", v.note || "", v.ts.slice(0,19).replace("T"," ")]);
   });
-  var nRows = [["Halbjahr","Klasse","Schüler","Abfragen","richtig gesamt","abgefragt","Prozent","Note","Status"]];
+  var oRowsRaw = [["Datum","Halbjahr","Klasse","Schüler","Bewertung","Bemerkung","Erfasst am"]];
+  S.oral.slice().sort(function(a,b){ return a.ts.localeCompare(b.ts); }).forEach(function(o){
+    oRowsRaw.push([{t:"d",v:o.date}, termOf(o.date).label, o.classSnap, o.studentSnap,
+      o.value > 0 ? "pro" : "contra", o.note || "", o.ts.slice(0,19).replace("T"," ")]);
+  });
+
+  /* Ein Blatt je Schüler und Halbjahr, mit beiden Notenindikationen nebeneinander */
+  var nRows = [["Halbjahr","Klasse","Schüler","Abfragen","richtig gesamt","abgefragt","Prozent",
+                "Note Vokabeln","Status","pro","contra","Saldo","Note mündlich","HA vergessen"]];
   S.classes.forEach(function(c){
     c.students.forEach(function(st){
       var terms = {};
       S.vocab.forEach(function(v){ if (v.studentId === st.id) terms[termOf(v.date).key] = termOf(v.date); });
+      S.oral.forEach(function(o){ if (o.studentId === st.id) terms[termOf(o.date).key] = termOf(o.date); });
+      S.homework.forEach(function(h){ if (h.studentId === st.id) terms[termOf(h.date).key] = termOf(h.date); });
       Object.keys(terms).sort().forEach(function(k){
-        var g = termGrade(vocabIn(st.id, k));
-        nRows.push([terms[k].label, c.name, st.name, g.runs, g.points, g.base, {t:"p",v:g.pct}, g.grade,
-          g.complete ? "vollständig" : "offen (" + g.runs + " von " + S.settings.setRuns + ")"]);
+        var tv = vocabIn(st.id, k), g = termGrade(tv);
+        var og = oralGrade(oralIn(st.id, k));
+        nRows.push([terms[k].label, c.name, st.name,
+          tv.length ? g.runs : "", tv.length ? g.points : "", tv.length ? g.base : "",
+          tv.length ? {t:"p",v:g.pct} : "", tv.length ? g.grade : "",
+          tv.length ? (g.complete ? "vollständig" : "offen (" + g.runs + " von " + S.settings.setRuns + ")") : "",
+          og.pro, og.con, og.saldo, og.grade, hwIn(st.id, k).length]);
       });
     });
   });
@@ -1577,60 +1848,187 @@ function buildSheets(){
     hRows.push([{t:"d",v:h.date}, termOf(h.date).label, h.classSnap, h.studentSnap, note,
       h.ts.slice(0,19).replace("T"," ")]);
   });
-  var oRows = [["Klasse","Schüler","Abfragen gesamt","Ø Note über Halbjahre","HA vergessen","letzte HA"]];
+  var oRows = [["Klasse","Schüler","Abfragen gesamt","Ø Note Vokabeln","pro","contra",
+                "Ø Note mündlich","HA vergessen","letzte HA"]];
   S.classes.forEach(function(c){
     c.students.forEach(function(st){
       var vs = S.vocab.filter(function(v){ return v.studentId === st.id; });
       var hs = S.homework.filter(function(h){ return h.studentId === st.id; });
-      var terms = {};
-      vs.forEach(function(v){ terms[termOf(v.date).key] = 1; });
-      var gs = Object.keys(terms).map(function(k){ return termGrade(vocabIn(st.id, k)).grade; });
-      var avg = gs.length ? { t:"f", v: Math.round(gs.reduce(function(a,b){ return a+b; },0) / gs.length * 100) / 100 } : "";
+      var os = S.oral.filter(function(o){ return o.studentId === st.id; });
+      var tv = {}, all = {};
+      vs.forEach(function(v){ tv[termOf(v.date).key] = 1; all[termOf(v.date).key] = 1; });
+      os.forEach(function(o){ all[termOf(o.date).key] = 1; });
+      hs.forEach(function(h){ all[termOf(h.date).key] = 1; });
+      var gs = Object.keys(tv).map(function(k){ return termGrade(vocabIn(st.id, k)).grade; });
+      /* „ohne = 4" gilt auch für Halbjahre ohne mündlichen Eintrag, sofern es das Halbjahr gibt */
+      var gos = Object.keys(all).map(function(k){ return oralGrade(oralIn(st.id, k)).grade; });
+      var mean = function(a){ return a.length ? { t:"f", v: Math.round(a.reduce(function(x,y){ return x+y; },0) / a.length * 100) / 100 } : ""; };
+      var pro = os.filter(function(o){ return o.value > 0; }).length;
       var lastH = hs.length ? { t:"d", v: hs.map(function(h){ return h.date; }).sort().pop() } : "";
-      oRows.push([c.name, st.name, vs.length, avg, hs.length, lastH]);
+      oRows.push([c.name, st.name, vs.length, mean(gs), pro, os.length - pro, mean(gos), hs.length, lastH]);
     });
   });
   return [
-    { name:"Vokabelabfrage", rows:vRows, widths:[11,15,16,20,28,9,11,11,24,20] },
-    { name:"Noten",          rows:nRows, widths:[15,16,20,10,15,11,10,7,20] },
-    { name:"Hausaufgaben",   rows:hRows, widths:[11,15,16,20,32,20] },
-    { name:"Übersicht",      rows:oRows, widths:[16,20,16,20,13,12] }
+    { name:"Vokabelabfrage", rows:vRows,    widths:[11,15,16,20,28,9,11,11,24,20] },
+    { name:"Mündlich",       rows:oRowsRaw, widths:[11,15,16,20,11,32,20] },
+    { name:"Noten",          rows:nRows,    widths:[15,16,20,10,15,11,10,14,20,7,8,8,15,13] },
+    { name:"Hausaufgaben",   rows:hRows,    widths:[11,15,16,20,32,20] },
+    { name:"Übersicht",      rows:oRows,    widths:[16,20,16,18,7,8,17,13,12] }
   ];
 }
 function fileName(){ return "Klassenjournal_" + iso() + ".xlsx"; }
 
+/* Ein Weg für alle Dateien: erst die Speichern-Oberfläche des Viewers,
+   dann das iOS-Teilen-Menü, zuletzt der Browser-Download. */
+async function deliver(blob, name){
+  try {
+    if (window.claude && typeof window.claude.use === "function"){
+      var dl = await window.claude.use("downloads");
+      if (dl){ await dl.save({ filename:name, data:blob }); return true; }
+    }
+  } catch(e){
+    if (e && (e.code === "declined" || e.code === "rate_limited")){ toast("Speichern abgebrochen"); return false; }
+  }
+  try {
+    var f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files:[f] })){
+      await navigator.share({ files:[f], title:"Klassenjournal" }); return true;
+    }
+  } catch(e){ if (e && e.name === "AbortError") return false; }
+  try {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 3000);
+    return true;
+  } catch(e2){}
+  toast("Teilen hier nicht möglich — nutze den CSV-Weg");
+  return false;
+}
+
 $("ex-xlsx").addEventListener("click", async function(){
-  if (!S.vocab.length && !S.homework.length){ toast("Noch keine Einträge zum Exportieren"); return; }
+  if (!S.vocab.length && !S.homework.length && !S.oral.length){ toast("Noch keine Einträge zum Exportieren"); return; }
   if (running()) toast("Hinweis: die laufende Abfrage ist noch nicht enthalten");
   var bytes;
   try { bytes = buildXlsx(buildSheets()); }
   catch(e){ toast("Datei konnte nicht erzeugt werden"); return; }
   var blob = new Blob([bytes], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  var name = fileName(), done = false;
-  try {
-    if (window.claude && typeof window.claude.use === "function"){
-      var dl = await window.claude.use("downloads");
-      if (dl){ await dl.save({ filename:name, data:blob }); done = true; }
-    }
-  } catch(e){
-    if (e && (e.code === "declined" || e.code === "rate_limited")){ toast("Speichern abgebrochen"); return; }
-  }
-  if (!done) try {
-    var f = new File([blob], name, { type: blob.type });
-    if (navigator.canShare && navigator.canShare({ files:[f] })){
-      await navigator.share({ files:[f], title:"Klassenjournal" }); done = true;
-    }
-  } catch(e){ if (e && e.name === "AbortError") return; }
-  if (!done) try {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url; a.download = name; document.body.appendChild(a); a.click();
-    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 3000);
-    done = true; toast("Datei erzeugt");
-  } catch(e2){}
-  if (!done){ toast("Teilen hier nicht möglich — nutze den CSV-Weg"); return; }
+  if (!await deliver(blob, "Klassenjournal_" + iso() + ".xlsx")) return;
   S.settings.lastExport = new Date().toISOString(); save(); renderExport();
 });
+
+/* ---------- Sicherung erstellen und einlesen ---------- */
+function backupData(){
+  return { app:"klassenjournal", version:1, exported:new Date().toISOString(),
+           settings:S.settings, classes:S.classes, vocab:S.vocab, oral:S.oral, homework:S.homework };
+}
+$("bk-save").addEventListener("click", async function(){
+  var txt = JSON.stringify(backupData());
+  var blob = new Blob([txt], { type:"application/json" });
+  if (!await deliver(blob, "Klassenjournal-Sicherung_" + iso() + ".json")) return;
+  S.settings.lastBackup = new Date().toISOString(); save(); renderExport();
+  toast("Sicherung erstellt");
+});
+$("bk-load").addEventListener("click", function(){ $("bk-file").value = ""; $("bk-file").click(); });
+$("bk-file").addEventListener("change", function(){
+  var f = this.files && this.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onerror = function(){ toast("Datei konnte nicht gelesen werden"); };
+  r.onload = function(){
+    var data;
+    try { data = JSON.parse(String(r.result)); }
+    catch(e){ toast("Das ist keine gültige Sicherungsdatei"); return; }
+    if (!data || !Array.isArray(data.classes)){ toast("Das ist keine Sicherung des Klassenjournals"); return; }
+    importBackup(data);
+  };
+  r.readAsText(f);
+});
+
+function sameName(a, b){
+  return String(a).trim().localeCompare(String(b).trim(), "de", { sensitivity:"base" }) === 0;
+}
+/* Zusammenführen statt ersetzen. Klassen und Schüler werden zuerst über die Kennung
+   gesucht, dann über den Namen — sonst entstünden Dubletten, wenn dieselbe Klasse
+   auf zwei Geräten getrennt angelegt wurde. */
+function importBackup(data){
+  var frisch = !S.vocab.length && !S.oral.length && !S.homework.length;
+  var stat = { klassen:0, schueler:0, vocab:0, oral:0, homework:0, bekannt:0 };
+
+  /* Beispieldaten weichen echten Daten */
+  if (data.classes.length){
+    S.classes = S.classes.filter(function(c){ return !c.demo; });
+    ["vocab","oral","homework"].forEach(function(k){
+      S[k] = S[k].filter(function(e){ return !e.demo; });
+    });
+  }
+
+  var clsMap = {}, stMap = {};
+  data.classes.forEach(function(ic){
+    if (!ic || !ic.id) return;
+    var lc = S.classes.filter(function(c){ return c.id === ic.id; })[0] ||
+             S.classes.filter(function(c){ return sameName(c.name, ic.name); })[0];
+    if (!lc){
+      lc = { id:ic.id, name:ic.name, students:[] };
+      S.classes.push(lc); stat.klassen++;
+    }
+    clsMap[ic.id] = lc.id;
+    (ic.students || []).forEach(function(is){
+      if (!is || !is.id) return;
+      var ls = lc.students.filter(function(x){ return x.id === is.id; })[0] ||
+               lc.students.filter(function(x){ return sameName(x.name, is.name); })[0];
+      if (!ls){ ls = { id:is.id, name:is.name }; lc.students.push(ls); stat.schueler++; }
+      stMap[is.id] = ls.id;
+    });
+    lc.students.sort(byName);
+  });
+  S.classes.sort(byClass);
+
+  ["vocab","oral","homework"].forEach(function(k){
+    var vorhanden = {};
+    S[k].forEach(function(e){ vorhanden[e.id] = 1; });
+    (data[k] || []).forEach(function(e){
+      if (!e || !e.id) return;
+      if (vorhanden[e.id]){ stat.bekannt++; return; }
+      var kopie = JSON.parse(JSON.stringify(e));
+      if (kopie.classId && clsMap[kopie.classId]) kopie.classId = clsMap[kopie.classId];
+      if (kopie.studentId && stMap[kopie.studentId]) kopie.studentId = stMap[kopie.studentId];
+      delete kopie.demo;
+      S[k].push(kopie); stat[k]++;
+    });
+  });
+
+  /* Einstellungen nur bei einer noch leeren App übernehmen — sonst würde eine
+     Sicherung stillschweigend die Notenschlüssel des Geräts überschreiben. */
+  var setUeb = false;
+  if (frisch && data.settings){
+    Object.keys(defaults()).forEach(function(key){
+      if (data.settings[key] !== undefined && data.settings[key] !== null) S.settings[key] = data.settings[key];
+    });
+    setUeb = true;
+  }
+
+  if (S.classes.length && !cls(sel.cls)) sel.cls = S.classes[0].id;
+  klOpen = null; oralUndo = [];
+  save(); refreshAll();
+
+  var pl = function(n, ein, viele){ return n + " " + (n === 1 ? ein : viele); };
+  var neu = stat.vocab + stat.oral + stat.homework;
+  $("askT").textContent = "Sicherung eingelesen";
+  $("askM").textContent =
+    (stat.klassen || stat.schueler
+      ? pl(stat.klassen, "Klasse", "Klassen") + " und " + pl(stat.schueler, "Schüler", "Schüler") + " neu angelegt. "
+      : "Keine neuen Klassen oder Schüler. ") +
+    (neu
+      ? pl(stat.vocab, "Abfrage", "Abfragen") + ", " + pl(stat.oral, "mündliche Bewertung", "mündliche Bewertungen") +
+        " und " + pl(stat.homework, "Hausaufgabe", "Hausaufgaben") + " übernommen. "
+      : "Keine neuen Einträge. ") +
+    (stat.bekannt ? pl(stat.bekannt, "Eintrag war", "Einträge waren") + " bereits vorhanden." : "") +
+    (setUeb ? " Die Einstellungen wurden mit übernommen, weil das Gerät noch keine Einträge hatte." : "");
+  var y = $("askYes"); y.textContent = "Alles klar"; y.className = "btn primary";
+  $("askNo").hidden = true;
+  askResolve = function(){ $("askNo").hidden = false; };
+  $("dlgAsk").showModal();
+}
 
 function csvCell(v){
   var s = (v === null || v === undefined) ? "" : (typeof v === "object" ? v.v : v);
@@ -1660,6 +2058,7 @@ $("dlgOutClose").addEventListener("click", function(){ $("dlgOut").close(); });
 load();
 var today = iso();
 $("vk-date").value = (S.session && S.session.date) || today;
+$("mu-date").value = today;
 $("ha-date").value = today;
 $("todayLbl").innerHTML = new Date().toLocaleDateString("de-DE", { weekday:"short", day:"2-digit", month:"2-digit", year:"numeric" }) +
   '<br><span style="color:var(--ink-3)">' + termOf(today).label + '</span>';
@@ -1670,6 +2069,7 @@ if (S.session){
   sel.cls = S.classes[0].id;
 }
 renderVokabel();
+renderMuendlich();
 renderHa();
 renderClasses();
 renderExport();
