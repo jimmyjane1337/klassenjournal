@@ -243,6 +243,7 @@ button{font-family:inherit}
 .entry .x:hover{color:var(--bad); background:var(--bad-soft)}
 .stripe{width:3px; align-self:stretch; border-radius:2px; background:var(--accent); flex:0 0 auto}
 .stripe.bad{background:var(--bad)}
+.stripe.good{background:var(--good)}
 .empty{padding:18px 14px; color:var(--ink-3); font-size:14.5px; font-style:italic; text-align:center}
 
 .tag{display:inline-flex; align-items:center; font-size:11.5px; font-weight:600; letter-spacing:.04em; padding:3px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-2); text-transform:uppercase}
@@ -971,10 +972,8 @@ function renderVokabel(){
   if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
   else if (!c.students.length) host.innerHTML = '<div class="empty">Diese Klasse hat noch keine Schüler</div>';
   else c.students.forEach(function(st){
-    var n = vocabIn(st.id, tk).length, runs = S.settings.setRuns;
-    var kl = n >= runs ? "full" : (n > 0 ? "some" : "");
     host.appendChild(studentTile(st, c, !!sel.vkPicked[st.id],
-      '<span class="prog ' + kl + '">' + n + "/" + runs + "</span>",
+      '<span class="prog">' + vocabAsked(st.id, tk) + "/" + vocabZiel() + "</span>",
       function(){
         if (sel.vkPicked[st.id]) delete sel.vkPicked[st.id];
         else {
@@ -1003,8 +1002,8 @@ function renderVkList(){
     var el = document.createElement("div"); el.className = "entry";
     el.innerHTML = '<div class="stripe"></div><div class="grow"><div class="who">' + esc(v.studentSnap) +
       (v.demo ? ' <span class="tag demo">Beispiel</span>' : '') +
-      '</div><div class="det">' + esc(v.classSnap) + (v.lesson ? ' · ' + esc(v.lesson) : '') + '</div></div>' +
-      '<div class="val">' + v.points + '/' + v.max + '</div>' +
+      '</div><div class="det">' + v.points + ' von ' + v.max + ' richtig · ' + esc(v.classSnap) +
+      (v.lesson ? ' · ' + esc(v.lesson) : '') + '</div></div>' +
       '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
     el.querySelector(".x").addEventListener("click", function(){
       S.vocab = S.vocab.filter(function(x){ return x.id !== v.id; }); save(); refreshAll(); toast("Eintrag gelöscht");
@@ -1140,10 +1139,8 @@ function openAdd(){
   var free = c.students.filter(function(st){ return !inRun[st.id]; });
   if (!free.length){ host.innerHTML = '<div class="empty">Alle Schüler dieser Klasse sind bereits dabei</div>'; }
   free.forEach(function(st){
-    var n = vocabIn(st.id, tk).length;
-    var kl = n >= S.settings.setRuns ? "full" : (n > 0 ? "some" : "");
     host.appendChild(studentTile(st, c, false,
-      '<span class="prog ' + kl + '">' + n + "/" + S.settings.setRuns + "</span>",
+      '<span class="prog">' + vocabAsked(st.id, tk) + "/" + vocabZiel() + "</span>",
       function(){
         if (S.session.cands.length >= S.settings.seats){ toast("Alle Plätze belegt"); return; }
         S.session.cands.push({ sid:st.id, name:st.name, answers:[] });
@@ -1241,7 +1238,7 @@ function oralTile(st, c, tk){
   var nm = document.createElement("div");
   nm.className = "nmw";
   nm.innerHTML = '<span class="nm">' + esc(st.name) + '</span>' +
-    '<span class="cnt2' + (g.count ? '' : ' leer') + '"><span class="kl">M</span>' +
+    '<span class="cnt2' + (g.count ? '' : ' leer') + '">' +
     '<b class="p">' + g.pro + '</b>|<b class="n">' + g.con + '</b></span>';
   wrap.appendChild(nm);
   [[1,"up","Positiv für "],[-1,"dn","Negativ für "]].forEach(function(k){
@@ -1294,12 +1291,14 @@ function renderMuList(){
   if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
   rows.forEach(function(o){
     var el = document.createElement("div"); el.className = "entry";
-    el.innerHTML = '<div class="stripe' + (o.value > 0 ? '' : ' bad') + '"></div>' +
+    el.innerHTML = '<div class="stripe ' + (o.value > 0 ? 'good' : 'bad') + '"></div>' +
       '<div class="grow"><div class="who">' + esc(o.studentSnap) + '</div>' +
       '<div class="det">' + esc(o.classSnap) + ' · ' + (o.value > 0 ? 'positiv' : 'negativ') +
       (o.note ? ' · ' + esc(o.note) : ' · <em>Bemerkung hinzufügen</em>') + '</div></div>' +
       '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
-    el.querySelector(".grow").addEventListener("click", function(){ openNote(o); });
+    el.querySelector(".grow").addEventListener("click", function(){
+      openNote(o, o.studentSnap + " · " + (o.value > 0 ? "positiv" : "negativ") + " · " + deDate(o.date));
+    });
     el.querySelector(".x").addEventListener("click", async function(){
       var ok = await ask("Eintrag löschen",
         esc(o.studentSnap) + " · " + (o.value > 0 ? "positiv" : "negativ") + " vom " + deDate(o.date) +
@@ -1326,10 +1325,10 @@ $("mu-undo").addEventListener("click", function(){
 
 /* Bemerkung nachtragen */
 var noteTarget = null;
-function openNote(o){
-  noteTarget = o;
-  $("dlgNoteS").textContent = o.studentSnap + " · " + (o.value > 0 ? "positiv" : "negativ") + " · " + deDate(o.date);
-  $("dlgNoteV").value = o.note || "";
+function openNote(e, sub){
+  noteTarget = e;
+  $("dlgNoteS").textContent = sub;
+  $("dlgNoteV").value = e.note || "";
   $("dlgNote").showModal();
 }
 $("dlgNoteCancel").addEventListener("click", function(){ $("dlgNote").close(); });
@@ -1366,14 +1365,16 @@ function renderHaList(){
   var rows = S.homework.filter(function(h){ return h.date === d; }).sort(function(a,b){ return b.ts.localeCompare(a.ts); });
   var host = $("ha-list"); host.innerHTML = "";
   if (!rows.length){ host.innerHTML = '<div class="empty">Am ' + deDate(d) + ' noch nichts erfasst</div>'; return; }
-  var tk = termOf(d).key;
   rows.forEach(function(h){
     var el = document.createElement("div"); el.className = "entry";
     el.innerHTML = '<div class="stripe bad"></div><div class="grow"><div class="who">' + esc(h.studentSnap) +
       (h.demo ? ' <span class="tag demo">Beispiel</span>' : '') +
-      '</div><div class="det">' + esc(h.classSnap) + (h.note ? ' · ' + esc(h.note) : '') + '</div></div>' +
-      '<div class="val">' + hwIn(h.studentId, tk).length + '×</div>' +
+      '</div><div class="det">' + esc(h.classSnap) +
+      (h.note ? ' · ' + esc(h.note) : ' · <em>Notiz hinzufügen</em>') + '</div></div>' +
       '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
+    el.querySelector(".grow").addEventListener("click", function(){
+      openNote(h, h.studentSnap + " · vergessene Hausaufgabe · " + deDate(h.date));
+    });
     el.querySelector(".x").addEventListener("click", function(){
       S.homework = S.homework.filter(function(x){ return x.id !== h.id; }); save(); refreshAll(); toast("Eintrag gelöscht");
     });
@@ -1461,7 +1462,7 @@ function renderHistory(){
     });
     to.forEach(function(o){
       var el = document.createElement("div"); el.className = "entry";
-      el.innerHTML = '<div class="stripe' + (o.value > 0 ? '' : ' bad') + '"></div>' +
+      el.innerHTML = '<div class="stripe ' + (o.value > 0 ? 'good' : 'bad') + '"></div>' +
         '<div class="grow"><div class="who">' + deDate(o.date) +
         ' <span style="font-weight:400; color:var(--ink-2)">mündlich ' + (o.value > 0 ? 'positiv' : 'negativ') + '</span></div>' +
         '<div class="det">' + (o.note ? esc(o.note) : '<em>ohne Bemerkung</em>') + '</div></div>' +
