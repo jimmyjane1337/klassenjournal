@@ -875,6 +875,12 @@ function vocabAsked(sid, termKey){
   return n;
 }
 function vocabZiel(){ return S.settings.setRuns * S.settings.setSize; }
+/* richtig beantwortete Vokabeln eines Halbjahres */
+function vocabRight(sid, termKey){
+  var n = 0;
+  vocabIn(sid, termKey).forEach(function(v){ n += (+v.points || 0); });
+  return n;
+}
 
 /* Ampel für vergessene Hausaufgaben: ab 2 gelb, ab 3 rot */
 function hwClass(n){
@@ -1538,6 +1544,7 @@ function renderClasses(){
         grid.appendChild(studentTile(st, c, false,
           '<span class="prog kz">' +
             '<span class="kl">V</span>' + vocabAsked(st.id, tk) + '/' + vocabZiel() +
+            ' <span class="kl">(</span>' + vocabRight(st.id, tk) + '<span class="kl">R)</span>' +
             ' <span class="kl">M</span><b class="p">' + og.pro + '</b>|<b class="n">' + og.con + '</b>' +
             ' <span class="kl">H</span><b class="' + hwClass(m) + '">' + m + '</b>' +
           '</span>',
