@@ -211,6 +211,8 @@ button{font-family:inherit}
 .dots i.ok{background:var(--good); border-color:var(--good)}
 .dots i.no{background:var(--bad); border-color:var(--bad)}
 .dots i.now{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+/* Kreise aus der fortgesetzten Abfrage: sichtbar, aber erkennbar aelter */
+.dots i.alt{opacity:.45}
 
 .answers{display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 13px 10px}
 .ans{
@@ -548,11 +550,22 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
         <div class="gradeMeta" id="zo-last">noch nie exportiert</div>
       </div>
 
+      <div class="card stack">
+        <div class="cfgH">OneDrive</div>
+        <div class="gradeMeta" id="sy-state">nicht verbunden</div>
+        <button class="btn primary wide" id="sy-connect">Mit OneDrive verbinden</button>
+        <button class="btn wide hidden" id="sy-now">Jetzt abgleichen</button>
+        <button class="btn wide hidden" id="sy-off">Verbindung trennen</button>
+        <p class="gradeMeta" id="sy-hint" style="margin:0"></p>
+        <button class="btn sm hidden" id="sy-manual">Anmeldung von Hand abschließen</button>
+      </div>
+
       <details class="help">
-        <summary>Synchronisation mit OneDrive</summary>
+        <summary>Wie der Abgleich arbeitet</summary>
         <div class="body">
-          <p>In Vorbereitung: Die App legt zwei Dateien in einem eigenen Ordner in OneDrive ab — den Datenbestand und diese Excel-Datei, bei jedem Abgleich neu erzeugt. Abgeglichen wird beim Öffnen und nach jeder Änderung. Ohne Netz sammelt die App und überträgt später.</p>
-          <p>Bis dahin ist der Knopf oben der Weg: Datei erzeugen, im Teilen-Menü in OneDrive sichern, die vorhandene ersetzen. Der Export enthält immer den kompletten Bestand — Überschreiben kann nichts verlieren.</p>
+          <p>Die App legt zwei Dateien in einem <b>eigenen Ordner</b> in OneDrive ab: <code>klassenjournal.json</code> als Bestand und <code>Klassenjournal.xlsx</code> als lesbare Auswertung, bei jedem Abgleich neu erzeugt. Beides führt Kürzel, keine Namen. Auf andere Dateien in OneDrive hat die App keinen Zugriff.</p>
+          <p>Abgeglichen wird beim Öffnen und kurz nach jeder Änderung, nie mitten in einer laufenden Abfrage. Ohne Netz sammelt die App und überträgt beim nächsten Mal.</p>
+          <p>Zusammengeführt, nicht überschrieben: Was auf dem einen Gerät entstanden ist, kommt auf dem anderen hinzu. Gelöschtes bleibt gelöscht, auch auf dem anderen Gerät.</p>
         </div>
       </details>
 
@@ -699,6 +712,18 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
   <div class="df"><button class="btn primary" id="dlgHistClose">Schließen</button></div>
 </dialog>
 
+<dialog id="dlgPaste">
+  <div class="dh"><div class="t">Anmeldung abschließen</div></div>
+  <div class="db">
+    <p style="margin:0; font-size:14.5px; color:var(--ink-2)">Falls die Anmeldung in Safari statt in der App gelandet ist: dort die komplette Adresse aus der Adresszeile kopieren und hier einfügen.</p>
+    <textarea id="dlgPasteIn" rows="4" style="width:100%; font-size:15px; padding:10px; border-radius:10px; border:1px solid var(--line); background:#fff; color:inherit" placeholder="https://…?code=…"></textarea>
+  </div>
+  <div class="df">
+    <button class="btn ghost" id="dlgPasteCancel">Abbrechen</button>
+    <button class="btn primary" id="dlgPasteOk">Übernehmen</button>
+  </div>
+</dialog>
+
 <dialog id="dlgOut">
   <div class="dh"><div class="t">Export als CSV</div></div>
   <div class="db">
@@ -836,7 +861,7 @@ function toast(msg){
 /* ---------- Zustand ---------- */
 function defaults(){
   return { scale:[91,75,58,41,25], oralScale:[3,2,1,0,-1], setSize:6, setRuns:2, seats:4,
-           hwWarn:2, hwAlert:3, lastExport:null, lastBackup:null, lastMap:null };
+           hwWarn:2, hwAlert:3, lastExport:null, lastBackup:null, lastMap:null, lastSync:null };
 }
 function seed(){
   var names = "Amelie Brandt,Jonas Deger,Merve Kaya,Noah Riedl,Pia Sommer,Tarek Öz,Lena Vogt,Finn Wieland".split(",");
@@ -874,9 +899,17 @@ function load(){
   ensureCodes();
   S.vocab.forEach(function(v){ if (!v.max) v.max = S.settings.setSize; });
 }
+/* Geloeschtes hinterlaesst eine Marke, sonst bringt das andere Geraet es beim
+   Abgleich zurueck. Die Marken wandern mit der Sicherung mit. */
+function tomb(id){
+  if (!S.tomb) S.tomb = [];
+  if (S.tomb.indexOf(id) < 0) S.tomb.push(id);
+}
+function drop(k, id){ tomb(id); S[k] = S[k].filter(function(x){ return x.id !== id; }); }
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
   catch(e){ toast("Speichern fehlgeschlagen — Speicher voll oder blockiert"); }
+  if (typeof syncSoon === "function") syncSoon();
 }
 function cls(id){ for (var i=0;i<S.classes.length;i++) if (S.classes[i].id===id) return S.classes[i]; return null; }
 
@@ -1068,7 +1101,7 @@ function renderVkList(){
       (v.lesson ? ' · ' + esc(v.lesson) : '') + '</div></div>' +
       '<button class="x" type="button" aria-label="Eintrag löschen">×</button>';
     el.querySelector(".x").addEventListener("click", function(){
-      S.vocab = S.vocab.filter(function(x){ return x.id !== v.id; }); save(); refreshAll(); toast("Eintrag gelöscht");
+      drop("vocab", v.id); save(); refreshAll(); toast("Eintrag gelöscht");
     });
     host.appendChild(el);
   });
@@ -1078,15 +1111,40 @@ $("vk-prev").addEventListener("click", function(){ shiftDate("vk-date", -1); set
 $("vk-next").addEventListener("click", function(){ shiftDate("vk-date", 1); setDate($("vk-date").value); });
 $("vk-today").addEventListener("click", function(){ setDate(iso()); });
 
+/* ---- Angefangene Pakete ----
+   Eine vorzeitig beendete Abfrage ist ein angefangenes Paket. Beim naechsten Mal
+   wird es weitergefuehrt, statt ein zweites unvollstaendiges daneben zu legen —
+   sonst zerfiele der Satz aus sechs Vokabeln in Bruchstuecke. */
+function offenesPaket(sid, tk){
+  var offen = vocabIn(sid, tk).filter(function(v){
+    return (+v.max || 0) > 0 && (+v.max) < S.settings.setSize;
+  });
+  return offen.length ? offen[offen.length - 1] : null;
+}
+function candFor(st, tk){
+  var k = { sid:st.id, name:st.name, answers:[] };
+  var p = offenesPaket(st.id, tk);
+  if (p){
+    var max = +p.max, richtig = Math.max(0, Math.min(+p.points || 0, max));
+    for (var i = 0; i < max; i++) k.answers.push(i < richtig);
+    k.pre = max;                 /* so viele Kreise stammen aus der frueheren Abfrage */
+    k.contId = p.id;
+    k.contDate = p.date;
+  }
+  return k;
+}
+
 /* ---- Abfrage starten ---- */
 $("vk-start").addEventListener("click", async function(){
   var c = cls(sel.cls); if (!c) return;
   var ids = Object.keys(sel.vkPicked); if (!ids.length) return;
   var d = $("vk-date").value, tk = termOf(d).key;
-  var over = [];
+  var over = [], weiter = [];
   var cands = c.students.filter(function(st){ return sel.vkPicked[st.id]; }).map(function(st){
-    if (vocabIn(st.id, tk).length >= S.settings.setRuns) over.push(st.name);
-    return { sid:st.id, name:st.name, answers:[] };
+    var k = candFor(st, tk);
+    if (k.contId) weiter.push(first(st.name) + " " + k.pre + "/" + S.settings.setSize);
+    else if (vocabIn(st.id, tk).length >= S.settings.setRuns) over.push(st.name);
+    return k;
   });
   if (over.length){
     var go = await ask("Schon abgefragt",
@@ -1099,6 +1157,7 @@ $("vk-start").addEventListener("click", async function(){
     cands:cands, active:0, history:[], startedTs:new Date().toISOString() };
   save();
   renderVokabel();
+  if (weiter.length) toast("Angefangenes Paket wird fortgesetzt: " + weiter.join(", "));
 });
 
 /* ---- laufende Abfrage ---- */
@@ -1136,7 +1195,8 @@ function renderRun(){
   var dots = $("run-dots"); dots.innerHTML = "";
   for (var i = 0; i < size; i++){
     var el = document.createElement("i");
-    if (a && i < a.answers.length) el.className = a.answers[i] ? "ok" : "no";
+    if (a && i < a.answers.length)
+      el.className = (a.answers[i] ? "ok" : "no") + (a.pre && i < a.pre ? " alt" : "");
     else if (a && i === a.answers.length && !done) el.className = "now";
     dots.appendChild(el);
   }
@@ -1148,7 +1208,8 @@ function renderRun(){
     $("run-answers").classList.add("hidden");
   } else {
     $("run-pos").textContent = "Vokabel " + ((a ? a.answers.length : 0) + 1) + " von " + size +
-      " · " + (a ? a.answers.filter(Boolean).length : 0) + " richtig";
+      " · " + (a ? a.answers.filter(Boolean).length : 0) + " richtig" +
+      (a && a.pre ? " · Fortsetzung vom " + deDate(a.contDate) : "");
     $("run-answers").classList.remove("hidden");
   }
 
@@ -1205,10 +1266,13 @@ function openAdd(){
       '<span class="prog">' + vocabAsked(st.id, tk) + "/" + vocabZiel() + "</span>",
       function(){
         if (S.session.cands.length >= S.settings.seats){ toast("Alle Plätze belegt"); return; }
-        S.session.cands.push({ sid:st.id, name:st.name, answers:[] });
+        var k = candFor(st, tk);
+        S.session.cands.push(k);
         S.session.active = S.session.cands.length - 1;
         save(); $("dlgAdd").close(); renderRun();
-        toast(st.name + " ist dabei");
+        toast(k.contId
+          ? st.name + " ist dabei — Paket vom " + deDate(k.contDate) + " wird fortgesetzt"
+          : st.name + " ist dabei");
       }));
   });
   $("dlgAdd").showModal();
@@ -1220,22 +1284,29 @@ function openEnd(){
   var s = S.session; if (!s) return;
   var size = S.settings.setSize, tk = termOf(s.date).key;
   var partial = s.cands.filter(function(k){ return k.answers.length > 0 && k.answers.length < size; }).length;
-  var empty = s.cands.filter(function(k){ return k.answers.length === 0; }).length;
+  var empty = s.cands.filter(function(k){ return k.answers.length === (k.pre || 0); }).length;
   $("dlgEndSub").textContent = (s.lesson ? s.lesson + " · " : "") + deDate(s.date) +
     (partial ? " · " + partial + " unvollständig" : "") + (empty ? " · " + empty + " ohne Antwort" : "");
   var body = $("dlgEndBody"); body.innerHTML = "";
   s.cands.forEach(function(k){
     var right = k.answers.filter(Boolean).length, asked = k.answers.length;
+    var neu = asked - (k.pre || 0);
     var box = document.createElement("div"); box.className = "gradeBox";
-    if (!asked){
+    if (!neu){
       box.innerHTML = '<div class="gradeNum">–</div><div style="min-width:0">' +
         '<div style="font-weight:600; font-size:14.5px">' + esc(k.name) + '</div>' +
-        '<div class="gradeMeta">keine Antwort erfasst — wird nicht gespeichert</div></div>';
+        '<div class="gradeMeta">' + (k.contId ? "keine weitere Antwort — das Paket bleibt, wie es war"
+                                              : "keine Antwort erfasst — wird nicht gespeichert") + '</div></div>';
     } else {
-      var t = termGrade(vocabIn(k.sid, tk).concat([{ points:right, max:asked }]));
+      /* Beim Fortsetzen ersetzt der neue Stand den alten Eintrag — er darf hier
+         nicht zusätzlich mitzählen, sonst stünde das Paket doppelt im Halbjahr. */
+      var vorher = vocabIn(k.sid, tk).filter(function(v){ return v.id !== k.contId; });
+      var t = termGrade(vorher.concat([{ points:right, max:asked }]));
       box.innerHTML = '<div class="gradeNum g' + t.grade + (t.complete ? '' : ' prov') + '">' + t.grade + '</div>' +
         '<div style="min-width:0"><div style="font-weight:600; font-size:14.5px">' + esc(k.name) + '</div>' +
-        '<div class="gradeMeta">' + right + "/" + asked + " richtig · Halbjahr " + t.points + "/" + t.base +
+        '<div class="gradeMeta">' + right + "/" + asked + " richtig" +
+        (k.contId ? " (davon " + neu + " heute)" : "") +
+        " · Halbjahr " + t.points + "/" + t.base +
         " · " + (t.complete ? GRADEWORD[t.grade] : "vorläufig, " + t.runs + " von " + S.settings.setRuns + " Abfragen") +
         '</div></div>';
     }
@@ -1255,9 +1326,24 @@ $("dlgEndSave").addEventListener("click", function(){
   var s = S.session; if (!s) return;
   var now = new Date().toISOString(), n = 0;
   s.cands.forEach(function(k){
-    var asked = k.answers.length; if (!asked) return;
+    var asked = k.answers.length, right = k.answers.filter(Boolean).length;
+    if (asked === (k.pre || 0)) return;      /* nichts Neues hinzugekommen */
+    if (k.contId){
+      /* Das fortgesetzte Paket bleibt ein Eintrag und behält sein ursprüngliches
+         Datum — sonst verschwände es aus dem Tag, an dem es angelegt wurde. */
+      var alt = S.vocab.filter(function(v){ return v.id === k.contId; })[0];
+      if (alt){
+        alt.points = right; alt.max = asked;
+        alt.note = (asked < S.settings.setSize
+          ? "Teilabfrage über " + asked + " Vokabeln, am " + deDate(s.date) + " fortgesetzt"
+          : "am " + deDate(s.date) + " vervollständigt");
+        if (!alt.lesson && s.lesson) alt.lesson = s.lesson;
+        alt.ts = now; alt.live = true;
+        n++; return;
+      }
+    }
     S.vocab.push({ id:uid(), date:s.date, classId:s.classId, classSnap:s.classSnap, studentId:k.sid,
-      studentSnap:k.name, lesson:s.lesson, points:k.answers.filter(Boolean).length, max:asked,
+      studentSnap:k.name, lesson:s.lesson, points:right, max:asked,
       note:(asked < S.settings.setSize ? "Teilabfrage über " + asked + " Vokabeln" : ""),
       ts:now, live:true });
     n++;
@@ -1366,7 +1452,7 @@ function renderMuList(){
         esc(o.studentSnap) + " · " + (o.value > 0 ? "positiv" : "negativ") + " vom " + deDate(o.date) +
         " entfernen? Die Note für das Halbjahr rechnet sich danach neu.", "Löschen", true);
       if (!ok) return;
-      S.oral = S.oral.filter(function(x){ return x.id !== o.id; });
+      drop("oral", o.id);
       oralUndo = oralUndo.filter(function(x){ return x !== o.id; });
       save(); refreshAll(); toast("Eintrag gelöscht");
     });
@@ -1380,7 +1466,7 @@ $("mu-today").addEventListener("click", function(){ setDate(iso()); });
 $("mu-undo").addEventListener("click", function(){
   var id = oralUndo.pop(); if (!id) return;
   var e = S.oral.filter(function(x){ return x.id === id; })[0];
-  S.oral = S.oral.filter(function(x){ return x.id !== id; });
+  drop("oral", id);
   save(); refreshAll();
   toast(e ? e.studentSnap + " zurückgenommen" : "Zurückgenommen");
 });
@@ -1438,7 +1524,7 @@ function renderHaList(){
       openNote(h, h.studentSnap + " · vergessene Hausaufgabe · " + deDate(h.date));
     });
     el.querySelector(".x").addEventListener("click", function(){
-      S.homework = S.homework.filter(function(x){ return x.id !== h.id; }); save(); refreshAll(); toast("Eintrag gelöscht");
+      drop("homework", h.id); save(); refreshAll(); toast("Eintrag gelöscht");
     });
     host.appendChild(el);
   });
@@ -1517,7 +1603,7 @@ function renderHistory(){
           "Vokabelabfrage vom " + deDate(v.date) + " mit " + v.points + " von " + v.max +
           " richtigen Vokabeln entfernen? Die Halbjahresnote rechnet sich danach neu.", "Löschen", true);
         if (!ok) return;
-        S.vocab = S.vocab.filter(function(x){ return x.id !== v.id; });
+        drop("vocab", v.id);
         save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
       });
       list.appendChild(el);
@@ -1533,7 +1619,7 @@ function renderHistory(){
         var ok = await ask("Eintrag löschen",
           "Mündliche Bewertung vom " + deDate(o.date) + " entfernen? Die Note rechnet sich danach neu.", "Löschen", true);
         if (!ok) return;
-        S.oral = S.oral.filter(function(x){ return x.id !== o.id; });
+        drop("oral", o.id);
         save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
       });
       list.appendChild(el);
@@ -1548,7 +1634,7 @@ function renderHistory(){
         var ok = await ask("Eintrag löschen",
           "Vergessene Hausaufgabe vom " + deDate(h.date) + " entfernen?", "Löschen", true);
         if (!ok) return;
-        S.homework = S.homework.filter(function(x){ return x.id !== h.id; });
+        drop("homework", h.id);
         save(); renderHistory(); refreshAll(); toast("Eintrag gelöscht");
       });
       list.appendChild(el);
@@ -1642,6 +1728,7 @@ function renderClasses(){
           "„" + c.name + "“ mit " + c.students.length + " Schülern aus den Listen entfernen? " +
           "Bereits erfasste Abfragen und Hausaufgaben bleiben im Export erhalten.", "Löschen", true);
         if (!ok) return;
+        tomb(c.id);
         S.classes = S.classes.filter(function(x){ return x.id !== c.id; });
         if (sel.cls === c.id) sel.cls = S.classes.length ? S.classes[0].id : null;
         klOpen = null;
@@ -1743,6 +1830,7 @@ function renderExport(){
   var op = [];
   for (var q = hi; q >= lo; q--) op.push((q > 0 ? "+" + q : q) + "→" + oralGradeFor(q));
   $("os-preview").textContent = "Saldo: " + op.join("  ");
+  if (typeof renderSync === "function") renderSync();
 }
 ["sc1","sc2","sc3","sc4","sc5"].forEach(function(id, i){
   $(id).addEventListener("change", function(){
@@ -2071,6 +2159,7 @@ function backupData(){
                  return k;
                }) };
     }),
+    tomb: (S.tomb || []).slice(),
     vocab: ohneNamen(S.vocab), oral: ohneNamen(S.oral), homework: ohneNamen(S.homework)
   };
 }
@@ -2164,7 +2253,19 @@ function sameName(a, b){
 /* Zusammenführen statt ersetzen. Klassen und Schüler werden zuerst über die Kennung
    gesucht, dann über den Namen — sonst entstünden Dubletten, wenn dieselbe Klasse
    auf zwei Geräten getrennt angelegt wurde. */
-function importBackup(data){
+function importBackup(data, still){
+  /* Fremde Marken zuerst: was dort geloescht wurde, verschwindet auch hier,
+     und wird weiter unten nicht wieder eingelesen. */
+  if (!S.tomb) S.tomb = [];
+  var weg = {};
+  (data.tomb || []).forEach(function(id){
+    if (S.tomb.indexOf(id) < 0) S.tomb.push(id);
+  });
+  S.tomb.forEach(function(id){ weg[id] = 1; });
+  ["vocab","oral","homework"].forEach(function(k){
+    S[k] = S[k].filter(function(e){ return !weg[e.id]; });
+  });
+  S.classes = S.classes.filter(function(c){ return !weg[c.id]; });
   var frisch = !S.vocab.length && !S.oral.length && !S.homework.length;
   var stat = { klassen:0, schueler:0, vocab:0, oral:0, homework:0, bekannt:0 };
 
@@ -2178,7 +2279,7 @@ function importBackup(data){
 
   var clsMap = {}, stMap = {};
   data.classes.forEach(function(ic){
-    if (!ic || !ic.id) return;
+    if (!ic || !ic.id || weg[ic.id]) return;
     var lc = S.classes.filter(function(c){ return c.id === ic.id; })[0] ||
              S.classes.filter(function(c){ return sameName(c.name, ic.name); })[0];
     if (!lc){
@@ -2210,7 +2311,7 @@ function importBackup(data){
     var vorhanden = {};
     S[k].forEach(function(e){ vorhanden[e.id] = 1; });
     (data[k] || []).forEach(function(e){
-      if (!e || !e.id) return;
+      if (!e || !e.id || weg[e.id]) return;
       if (vorhanden[e.id]){ stat.bekannt++; return; }
       var kopie = JSON.parse(JSON.stringify(e));
       if (kopie.classId && clsMap[kopie.classId]) kopie.classId = clsMap[kopie.classId];
@@ -2235,6 +2336,7 @@ function importBackup(data){
   if (S.classes.length && !cls(sel.cls)) sel.cls = S.classes[0].id;
   klOpen = null; oralUndo = [];
   save(); refreshAll();
+  if (still) return stat;
 
   var pl = function(n, ein, viele){ return n + " " + (n === 1 ? ein : viele); };
   var neu = stat.vocab + stat.oral + stat.homework;
@@ -2288,6 +2390,240 @@ $("ex-csv").addEventListener("click", async function(){
 });
 $("dlgOutClose").addEventListener("click", function(){ $("dlgOut").close(); });
 
+
+/* ---------- OneDrive: Anmeldung und Abgleich ----------
+   Autorisierungscode mit PKCE, ohne Bibliothek und ohne Geheimnis. Der Zugriff
+   beschraenkt sich auf einen eigenen Ordner der App; der Rest von OneDrive
+   bleibt fuer sie unsichtbar. Die Anmeldedaten liegen unter einem eigenen
+   Schluessel, damit sie nie in einer Sicherung landen. */
+var MS = {
+  client: "8f7a9ab2-71af-4a4e-93d5-fff448040ee8",
+  authz:  "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
+  token:  "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+  scope:  "Files.ReadWrite.AppFolder offline_access",
+  root:   "https://graph.microsoft.com/v1.0/me/drive/special/approot:/"
+};
+var MSKEY = "klassenjournal.ms", PKKEY = "klassenjournal.pkce";
+var msTok = null, syncing = false, syncTimer = null, syncFehler = "";
+
+function msLoad(){ try { msTok = JSON.parse(localStorage.getItem(MSKEY) || "null"); } catch(e){ msTok = null; } }
+function msStore(){ try { localStorage.setItem(MSKEY, JSON.stringify(msTok)); } catch(e){} }
+function msClear(){ msTok = null; try { localStorage.removeItem(MSKEY); localStorage.removeItem(PKKEY); } catch(e){} }
+function msAn(){ return !!(msTok && msTok.refresh); }
+
+/* Die Umleitungsadresse muss zeichengleich zu der in der Registrierung sein. */
+function msRedirect(){
+  return (location.origin + location.pathname).replace(/index\.html$/, "");
+}
+function msMoeglich(){
+  return location.protocol === "https:" && !!(window.crypto && crypto.subtle) && !msImFrame();
+}
+function msImFrame(){ try { return window.top !== window.self; } catch(e){ return true; } }
+
+function b64url(buf){
+  var a = new Uint8Array(buf), t = "";
+  for (var i = 0; i < a.length; i++) t += String.fromCharCode(a[i]);
+  return btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function msRand(){ var a = new Uint8Array(32); crypto.getRandomValues(a); return b64url(a.buffer); }
+async function msChallenge(v){
+  return b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v)));
+}
+
+async function msConnect(){
+  if (!msMoeglich()){ toast("Anmeldung nur in der installierten App möglich"); return; }
+  var v = msRand(), st = msRand();
+  try { localStorage.setItem(PKKEY, JSON.stringify({ v:v, st:st, t:Date.now() })); }
+  catch(e){ toast("Speicher blockiert — Anmeldung nicht möglich"); return; }
+  var url = MS.authz
+    + "?client_id=" + encodeURIComponent(MS.client)
+    + "&response_type=code"
+    + "&redirect_uri=" + encodeURIComponent(msRedirect())
+    + "&scope=" + encodeURIComponent(MS.scope)
+    + "&code_challenge=" + (await msChallenge(v))
+    + "&code_challenge_method=S256"
+    + "&state=" + st
+    + "&prompt=select_account";
+  location.href = url;
+}
+
+async function msPost(body){
+  var r, j;
+  try {
+    r = await fetch(MS.token, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(body).toString()
+    });
+    j = await r.json();
+  } catch(e){ throw new Error("Keine Verbindung zu Microsoft"); }
+  if (!r.ok){
+    var err = new Error(j.error_description || j.error || "Anmeldung fehlgeschlagen");
+    err.code = j.error;
+    throw err;
+  }
+  msTok = {
+    refresh: j.refresh_token || (msTok && msTok.refresh) || null,
+    access:  j.access_token,
+    exp:     Date.now() + ((j.expires_in || 3600) - 120) * 1000
+  };
+  msStore();
+  return msTok;
+}
+
+async function msRedeem(code){
+  var pk = null;
+  try { pk = JSON.parse(localStorage.getItem(PKKEY) || "null"); } catch(e){}
+  if (!pk || !pk.v) throw new Error("Die Anmeldung wurde nicht auf diesem Gerät begonnen");
+  await msPost({ client_id:MS.client, grant_type:"authorization_code", code:code,
+                 redirect_uri:msRedirect(), code_verifier:pk.v, scope:MS.scope });
+  try { localStorage.removeItem(PKKEY); } catch(e){}
+}
+
+async function msAccess(){
+  if (!msAn()) return null;
+  if (msTok.access && Date.now() < msTok.exp) return msTok.access;
+  await msPost({ client_id:MS.client, grant_type:"refresh_token",
+                 refresh_token:msTok.refresh, scope:MS.scope });
+  return msTok.access;
+}
+
+async function msGet(name){
+  var t = await msAccess();
+  var r = await fetch(MS.root + encodeURIComponent(name) + ":/content",
+                      { headers:{ Authorization:"Bearer " + t } });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("Laden fehlgeschlagen (" + r.status + ")");
+  return await r.text();
+}
+async function msPut(name, blob, typ){
+  var t = await msAccess();
+  var r = await fetch(MS.root + encodeURIComponent(name) + ":/content",
+                      { method:"PUT", headers:{ Authorization:"Bearer " + t, "Content-Type":typ }, body:blob });
+  if (!r.ok) throw new Error("Hochladen fehlgeschlagen (" + r.status + ")");
+}
+
+/* Erst holen und zusammenfuehren, dann den vereinten Bestand zurueckschreiben.
+   Andersherum verloere das Geraet, das gerade zuletzt dran ist, die Arbeit des anderen. */
+async function msSync(leise){
+  if (syncing || !msAn()) return;
+  if (!navigator.onLine){ if (!leise) toast("Kein Netz — der Abgleich holt das nach"); return; }
+  syncing = true; syncFehler = ""; renderSync();
+  try {
+    var fern = await msGet("klassenjournal.json");
+    if (fern){
+      var d = null;
+      try { d = JSON.parse(fern); } catch(e){}
+      if (d && Array.isArray(d.classes)) importBackup(d, true);
+    }
+    await msPut("klassenjournal.json",
+      new Blob([JSON.stringify(backupData())], { type:"application/json" }), "application/json");
+    try {
+      await msPut("Klassenjournal.xlsx", new Blob([buildXlsx(buildSheets())]),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    } catch(e){ /* die Auswertung ist Beiwerk, der Bestand liegt schon oben */ }
+    S.settings.lastSync = new Date().toISOString();
+    save(); renderExport();
+    if (!leise) toast("Abgeglichen");
+  } catch(e){
+    if (e && (e.code === "invalid_grant" || e.code === "interaction_required")){
+      msClear();
+      syncFehler = "Die Anmeldung ist abgelaufen — bitte neu verbinden.";
+    } else {
+      syncFehler = (e && e.message) || "Abgleich fehlgeschlagen";
+    }
+    if (!leise) toast(syncFehler);
+  }
+  syncing = false; renderSync();
+}
+
+/* Nach jeder Aenderung, aber nicht waehrend einer laufenden Abfrage und nicht
+   bei jedem Tippen — das Klassenzimmer braucht die Verbindung nicht im Takt. */
+function syncSoon(){
+  if (!msAn()) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(function(){
+    syncTimer = null;
+    if (running()) { syncSoon(); return; }
+    msSync(true);
+  }, 20000);
+}
+
+function renderSync(){
+  var st = $("sy-state"), hint = $("sy-hint");
+  if (!st) return;
+  var verbunden = msAn();
+  $("sy-connect").classList.toggle("hidden", verbunden);
+  $("sy-now").classList.toggle("hidden", !verbunden);
+  $("sy-off").classList.toggle("hidden", !verbunden);
+  $("sy-manual").classList.toggle("hidden", verbunden || !msMoeglich());
+  if (!msMoeglich()){
+    st.textContent = "hier nicht verfügbar";
+    hint.textContent = "Die Anmeldung braucht die installierte App unter ihrer eigenen Adresse. In dieser Vorschau bleibt der Weg über „XLSX-Datei erzeugen & teilen“.";
+    $("sy-connect").classList.add("hidden");
+    return;
+  }
+  if (syncing){ st.textContent = "wird abgeglichen …"; }
+  else if (!verbunden){ st.textContent = "nicht verbunden"; }
+  else if (S.settings.lastSync){
+    st.textContent = "verbunden · zuletzt " +
+      new Date(S.settings.lastSync).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" });
+  } else st.textContent = "verbunden · noch nicht abgeglichen";
+  hint.textContent = syncFehler ? syncFehler
+    : verbunden ? "Abgeglichen wird beim Öffnen und nach jeder Änderung."
+    : "Anmeldung mit dem Microsoft-Konto, in dessen OneDrive die Sicherung liegen soll.";
+}
+
+/* Rueckkehr von der Anmeldung: entweder direkt in der App, oder von Hand
+   eingefuegt, wenn iOS die Rueckleitung in Safari abgelegt hat. */
+async function msHandleUrl(href){
+  var q;
+  try { q = new URL(href, location.href).searchParams; } catch(e){ toast("Das ist keine gültige Adresse"); return false; }
+  if (q.get("error")){
+    syncFehler = q.get("error_description") || q.get("error");
+    renderSync();
+    return false;
+  }
+  var code = q.get("code"), st = q.get("state");
+  if (!code) return false;
+  var pk = null;
+  try { pk = JSON.parse(localStorage.getItem(PKKEY) || "null"); } catch(e){}
+  if (!pk || pk.st !== st){ toast("Die Anmeldung passt nicht zu dieser App"); return false; }
+  try {
+    await msRedeem(code);
+    toast("Mit OneDrive verbunden");
+    renderSync();
+    msSync(true);
+    return true;
+  } catch(e){
+    syncFehler = (e && e.message) || "Anmeldung fehlgeschlagen";
+    renderSync();
+    toast(syncFehler);
+    return false;
+  }
+}
+
+$("sy-connect").addEventListener("click", function(){ msConnect(); });
+$("sy-now").addEventListener("click", function(){ msSync(false); });
+$("sy-off").addEventListener("click", async function(){
+  var ok = await ask("Verbindung trennen",
+    "Die App meldet sich von OneDrive ab. Die Dateien dort bleiben liegen, die Daten auf dem Gerät auch.",
+    "Trennen", true);
+  if (!ok) return;
+  msClear(); syncFehler = ""; renderSync(); toast("Verbindung getrennt");
+});
+$("sy-manual").addEventListener("click", function(){
+  $("dlgPasteIn").value = ""; $("dlgPaste").showModal();
+});
+$("dlgPasteCancel").addEventListener("click", function(){ $("dlgPaste").close(); });
+$("dlgPasteOk").addEventListener("click", async function(){
+  var v = $("dlgPasteIn").value.trim();
+  if (!v){ toast("Nichts eingefügt"); return; }
+  $("dlgPaste").close();
+  if (!await msHandleUrl(v)) toast("Daraus ließ sich keine Anmeldung lesen");
+});
+window.addEventListener("online", function(){ if (msAn()) msSync(true); });
+
 /* ---------- Start ---------- */
 load();
 var today = iso();
@@ -2307,6 +2643,15 @@ renderMuendlich();
 renderHa();
 renderClasses();
 renderExport();
+msLoad();
+renderSync();
+if (location.search.indexOf("code=") >= 0 || location.search.indexOf("error=") >= 0){
+  var zurueck = location.search;
+  try { history.replaceState({}, "", msRedirect()); } catch(e){}
+  msHandleUrl(msRedirect() + zurueck);
+} else if (msAn()) {
+  msSync(true);
+}
 if (S.session) toast("Laufende Abfrage wiederhergestellt");
 })();
 </script>
