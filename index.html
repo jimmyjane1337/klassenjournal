@@ -892,6 +892,11 @@ function seed(){
   };
 }
 var S = null;
+/* Nach dem bewussten Loeschen bleibt die App leer — Beispieldaten gibt es nur
+   beim allerersten Start, nicht als Ergebnis eines Loeschvorgangs. */
+function leer(){
+  return { settings: defaults(), session:null, classes:[], vocab:[], oral:[], homework:[], tomb:[] };
+}
 function load(){
   try { var raw = localStorage.getItem(KEY); if (raw) S = JSON.parse(raw); } catch(e){ S = null; }
   if (!S || !S.classes){
@@ -917,6 +922,18 @@ function load(){
   S.classes.forEach(function(c){ c.students.sort(byName); });
   ensureCodes();
   S.vocab.forEach(function(v){ if (!v.max) v.max = S.settings.setSize; });
+  /* Eintraege einer geloeschten Klasse waeren nirgends mehr erreichbar, wuerden
+     aber die Zaehler im Export weiterzaehlen. Sie verschwinden mit ihrer Klasse. */
+  if (S.tomb && S.tomb.length){
+    var weg = {};
+    S.tomb.forEach(function(id){ weg[id] = 1; });
+    ["vocab","oral","homework"].forEach(function(k){
+      S[k] = S[k].filter(function(e){
+        if (e.classId && weg[e.classId]){ tomb(e.id); return false; }
+        return true;
+      });
+    });
+  }
 }
 /* Geloeschtes hinterlaesst eine Marke, sonst bringt das andere Geraet es beim
    Abgleich zurueck. Die Marken wandern mit der Sicherung mit. */
@@ -1789,10 +1806,19 @@ function renderClasses(){
       del.className = "btn sm danger"; del.type = "button"; del.textContent = "Löschen";
       del.addEventListener("click", async function(){
         if (running() && S.session.classId === c.id){ toast("Erst die laufende Abfrage beenden"); return; }
+        var eig = S.vocab.filter(function(e){ return e.classId === c.id; }).length +
+                  S.oral.filter(function(e){ return e.classId === c.id; }).length +
+                  S.homework.filter(function(e){ return e.classId === c.id; }).length;
         var ok = await ask("Klasse löschen",
-          "„" + c.name + "“ mit " + c.students.length + " Schülern aus den Listen entfernen? " +
-          "Bereits erfasste Abfragen und Hausaufgaben bleiben im Export erhalten.", "Löschen", true);
+          "„" + c.name + "“ mit " + c.students.length + " Schülern löschen? " +
+          (eig ? (eig === 1 ? "Der eine erfasste Eintrag dieser Klasse wird mitgelöscht und ist "
+                              : "Die " + eig + " erfassten Einträge dieser Klasse werden mitgelöscht und sind ") +
+                 "danach auch im Export nicht mehr enthalten."
+               : "Für diese Klasse ist noch nichts erfasst."), "Löschen", true);
         if (!ok) return;
+        ["vocab","oral","homework"].forEach(function(k){
+          S[k].slice().forEach(function(e){ if (e.classId === c.id) drop(k, e.id); });
+        });
         tomb(c.id);
         S.classes = S.classes.filter(function(x){ return x.id !== c.id; });
         if (sel.cls === c.id) sel.cls = S.classes.length ? S.classes[0].id : null;
@@ -1926,14 +1952,22 @@ numSetting("set-runs", "setRuns", 1, 10);
 numSetting("set-seats", "seats", 1, 8);
 $("ex-wipe").addEventListener("click", async function(){
   var ok = await ask("Alle Daten löschen",
-    "Klassen, Abfragen und Hausaufgaben werden unwiderruflich entfernt. " +
-    "Nicht exportierte Einträge sind danach weg.", "Alles löschen", true);
+    "Klassen, Abfragen, mündliche Bewertungen und Hausaufgaben werden unwiderruflich entfernt. " +
+    "Nicht exportierte Einträge sind danach weg." +
+    (msAn() ? " Die Sicherung in OneDrive wird dabei ebenfalls geleert." : ""),
+    "Alles löschen", true);
   if (!ok) return;
   try { localStorage.removeItem(KEY); } catch(e){}
-  S = null; load(); save();
-  sel = { cls:S.classes.length ? S.classes[0].id : null, vkPicked:{}, haStudents:{} };
+  S = leer(); save();
+  sel = { cls:null, vkPicked:{}, haStudents:{} };
   klOpen = null; oralUndo = [];
-  refreshAll(); toast("Alle Daten gelöscht");
+  refreshAll();
+  if (msAn()){
+    toast("Alle Daten gelöscht — OneDrive wird geleert");
+    var weg = await msPush();
+    toast(weg ? "Alle Daten gelöscht, auch in OneDrive"
+              : "Lokal gelöscht — OneDrive war nicht erreichbar, der nächste Abgleich holt es nach");
+  } else toast("Alle Daten gelöscht");
 });
 
 /* ---------- xlsx-Writer (ohne Bibliothek) ---------- */
@@ -2212,11 +2246,13 @@ function ohneNamen(list){
     return k;
   });
 }
+/* Beispieldaten sind Anschauungsmaterial, kein Bestand — sie verlassen das Gerät nicht. */
+function ohneDemo(list){ return list.filter(function(e){ return !e.demo; }); }
 function backupData(){
   return {
     app:"klassenjournal", version:2, pseudonym:true, exported:new Date().toISOString(),
     settings:S.settings,
-    classes: S.classes.map(function(c){
+    classes: S.classes.filter(function(c){ return !c.demo; }).map(function(c){
       return { id:c.id, name:c.name, codePrefix:codePrefix(c),
                students: c.students.map(function(st){
                  var k = { id:st.id, code:st.code };
@@ -2225,7 +2261,8 @@ function backupData(){
                }) };
     }),
     tomb: (S.tomb || []).slice(),
-    vocab: ohneNamen(S.vocab), oral: ohneNamen(S.oral), homework: ohneNamen(S.homework)
+    vocab: ohneNamen(ohneDemo(S.vocab)), oral: ohneNamen(ohneDemo(S.oral)),
+    homework: ohneNamen(ohneDemo(S.homework))
   };
 }
 $("bk-save").addEventListener("click", async function(){
@@ -2600,6 +2637,23 @@ async function msSync(leise){
     if (!leise) toast(syncFehler);
   }
   syncing = false; renderSync();
+}
+
+/* Ueberschreiben statt zusammenfuehren — nur nach dem bewussten Loeschen, damit
+   der geleerte Stand nicht durch den alten aus der Cloud wieder aufgefuellt wird. */
+async function msPush(){
+  if (!msAn() || !navigator.onLine) return false;
+  try {
+    await msPut("klassenjournal.json",
+      new Blob([JSON.stringify(backupData())], { type:"application/json" }), "application/json");
+    try {
+      await msPut("Klassenjournal.xlsx", new Blob([buildXlsx(buildSheets())]),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    } catch(e){}
+    S.settings.lastSync = new Date().toISOString();
+    save(); renderExport();
+    return true;
+  } catch(e){ return false; }
 }
 
 /* Nach jeder Aenderung, aber nicht waehrend einer laufenden Abfrage und nicht
