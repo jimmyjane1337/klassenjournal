@@ -93,7 +93,7 @@ header.top .hw{
 .brand span{color:var(--accent)}
 .today{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; text-align:right; line-height:1.35}
 
-h2.vt{font-family:"Bricolage Grotesque", ui-sans-serif, sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em; margin:12px 0 10px; text-wrap:balance; text-align:right}
+h2.vt{font-family:"Bricolage Grotesque", ui-sans-serif, sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em; margin:12px 0 10px; text-wrap:balance; text-align:center}
 p.vs{margin:0 0 16px; color:var(--ink-2); font-size:14.5px; max-width:60ch}
 
 .label{display:block; font-size:11.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin:0 0 6px}
@@ -137,7 +137,7 @@ select{-webkit-appearance:none; appearance:none; background-image:none}
 }
 .tile[data-on="1"] .pick{font-weight:600}
 .tile .pick .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.tile .prog{font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:0 0 auto}
+.tile .prog{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:0 0 auto}
 .tile .prog.full{color:var(--good); font-weight:600}
 .tile .prog.some{color:var(--warn); font-weight:600}
 .tile .prog.hot{color:var(--bad); font-weight:600}
@@ -149,7 +149,7 @@ select{-webkit-appearance:none; appearance:none; background-image:none}
 .tile.ora .nmw{flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:7px; padding:10px 11px; font-size:15px}
 .tile.ora .nmw .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 /* Zähler des Halbjahres: positiv/negativ, ohne Note und ohne Saldo */
-.cnt2{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:0 0 auto}
+.cnt2{font-family:"IBM Plex Mono",monospace; font-size:13.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; flex:0 0 auto}
 .cnt2 b{font-weight:600}
 .cnt2 .kl{color:var(--ink-3); font-weight:400; margin-right:1px}
 .cnt2 b.p{color:var(--good)} .cnt2 b.n{color:var(--bad)}
@@ -1150,7 +1150,7 @@ function renderVkList(){
       title: esc(v.studentSnap) + (v.demo ? ' <span class="tag demo">Beispiel</span>' : ''),
       sub: subLine(v.classSnap, v.lesson),
       value: v.points + " von " + v.max + "<br>richtig",
-      onNote: function(){ openNote(v, v.studentSnap + " · Abfrage · " + deDate(v.date), "lesson"); },
+      onNote: function(){ openNote(v, v.studentSnap + " · Abfrage · " + deDate(v.date), "lesson", "z. B. Unit 4 – Irregular verbs"); },
       onDelete: function(){ drop("vocab", v.id); save(); refreshAll(); toast("Eintrag gelöscht"); }
     });
   });
@@ -1520,10 +1520,12 @@ $("mu-undo").addEventListener("click", function(){
 var noteTarget = null, noteField = "note";
 /* Bei Abfragen steht die Notiz im Feld der frueheren Lektionsangabe — dort hat
    sie die Lehrerin beim Start eingetippt, und dort bleibt sie auffindbar. */
-function openNote(e, sub, feld){
+function openNote(e, sub, feld, bsp){
   noteTarget = e; noteField = feld || "note";
   $("dlgNoteS").textContent = sub;
   $("dlgNoteV").value = e[noteField] || "";
+  /* Der Beispieltext entspricht dem des Feldes, in dem die Notiz sonst entsteht. */
+  $("dlgNoteV").placeholder = bsp || "z. B. hat den Konjunktiv erklärt";
   $("dlgNote").showModal();
 }
 $("dlgNoteCancel").addEventListener("click", function(){ $("dlgNote").close(); });
@@ -1533,6 +1535,10 @@ $("dlgNoteSave").addEventListener("click", function(){
 });
 
 /* ================= HAUSAUFGABEN ================= */
+function hwToday(sid){
+  var d = $("ha-date").value;
+  return S.homework.filter(function(h){ return h.studentId === sid && h.date === d; })[0] || null;
+}
 function renderHa(){
   renderClassChips($("ha-classes"), sel.cls, pickClass);
   var c = cls(sel.cls), host = $("ha-students");
@@ -1541,13 +1547,21 @@ function renderHa(){
   if (!c) host.innerHTML = '<div class="empty">Klasse wählen</div>';
   else if (!aktive(c).length) host.innerHTML = '<div class="empty">Diese Klasse hat keine aktiven Schüler</div>';
   else aktive(c).forEach(function(st){
-    var n = hwIn(st.id, tk).length;
-    host.appendChild(studentTile(st, c, !!sel.haStudents[st.id],
+    var n = hwIn(st.id, tk).length, schon = hwToday(st.id);
+    var kachel = studentTile(st, c, !!sel.haStudents[st.id],
       '<span class="prog"><b class="' + hwClass(n) + '">' + n + '</b>×</span>',
       function(){
+        /* Ein Schüler kann an einem Tag nur einmal ohne Hausaufgabe sein. */
+        if (hwToday(st.id)){
+          toast(st.name + " ist am " + deDate($("ha-date").value) +
+                " schon eingetragen — unten in der Liste änderbar");
+          return;
+        }
         if (sel.haStudents[st.id]) delete sel.haStudents[st.id]; else sel.haStudents[st.id] = true;
         renderHa();
-      }));
+      });
+    if (schon) kachel.classList.add("gone");
+    host.appendChild(kachel);
   });
   var n = Object.keys(sel.haStudents).length, btn = $("ha-save");
   btn.textContent = n === 1 ? "1 Eintrag speichern" : n + " Einträge speichern";
@@ -1562,8 +1576,8 @@ function renderHaList(){
       stripe: "hw",
       title: esc(h.studentSnap) + (h.demo ? ' <span class="tag demo">Beispiel</span>' : ''),
       sub: subLine(h.classSnap, h.note),
-      value: "1×",
-      onNote: function(){ openNote(h, h.studentSnap + " · vergessene Hausaufgabe · " + deDate(h.date)); },
+      value: "ohne",
+      onNote: function(){ openNote(h, h.studentSnap + " · vergessene Hausaufgabe · " + deDate(h.date), "note", "z. B. Heft vergessen, Aufgabe nachgereicht"); },
       onDelete: function(){ drop("homework", h.id); save(); refreshAll(); toast("Eintrag gelöscht"); }
     });
   });
@@ -1575,16 +1589,19 @@ $("ha-today").addEventListener("click", function(){ setDate(iso()); });
 $("ha-save").addEventListener("click", function(){
   var c = cls(sel.cls); if (!c) return;
   var ids = Object.keys(sel.haStudents); if (!ids.length) return;
-  var now = new Date().toISOString();
+  var now = new Date().toISOString(), n = 0, doppelt = 0;
   ids.forEach(function(sid){
     var st = c.students.filter(function(x){ return x.id === sid; })[0]; if (!st) return;
+    if (hwToday(st.id)){ doppelt++; return; }
     S.homework.push({ id:uid(), date:$("ha-date").value, classId:c.id, classSnap:c.name, studentId:st.id,
       studentSnap:st.name, note:$("ha-note").value.trim(), ts:now });
+    n++;
   });
   save();
-  var n = ids.length; sel.haStudents = {}; $("ha-note").value = "";
+  sel.haStudents = {}; $("ha-note").value = "";
   refreshAll();
-  toast(n === 1 ? "1 Eintrag gespeichert" : n + " Einträge gespeichert");
+  toast((n === 1 ? "1 Eintrag gespeichert" : n + " Einträge gespeichert") +
+        (doppelt ? ", " + doppelt + " waren an diesem Tag schon erfasst" : ""));
 });
 
 /* ================= VERLAUF ================= */
@@ -1642,7 +1659,7 @@ function renderHistory(){
         title: deDate(v.date) + art("Abfrage"),
         sub: subLine(null, v.lesson) + (v.note ? ' · <em>' + esc(v.note) + '</em>' : ''),
         value: v.points + " von " + v.max + "<br>richtig",
-        onNote: function(){ openNote(v, st.name + " · Abfrage · " + deDate(v.date), "lesson"); },
+        onNote: function(){ openNote(v, st.name + " · Abfrage · " + deDate(v.date), "lesson", "z. B. Unit 4 – Irregular verbs"); },
         onDelete: async function(){
           var ok = await ask("Eintrag löschen",
             "Abfrage vom " + deDate(v.date) + " mit " + v.points + " von " + v.max +
@@ -1657,7 +1674,7 @@ function renderHistory(){
       var pos = o.value > 0;
       list.appendChild(entryRow({
         stripe: pos ? "good" : "bad",
-        title: deDate(o.date) + art("mündlich"),
+        title: deDate(o.date) + art("Mündlich"),
         sub: subLine(null, o.note),
         value: pos ? "positiv" : "negativ",
         valClass: pos ? "good" : "bad",
@@ -1674,10 +1691,10 @@ function renderHistory(){
     th.forEach(function(h){
       list.appendChild(entryRow({
         stripe: "hw",
-        title: deDate(h.date) + art("HA vergessen"),
+        title: deDate(h.date) + art("Hausaufgaben"),
         sub: subLine(null, h.note),
-        value: "1×",
-        onNote: function(){ openNote(h, st.name + " · vergessene Hausaufgabe · " + deDate(h.date)); },
+        value: "ohne",
+        onNote: function(){ openNote(h, st.name + " · vergessene Hausaufgabe · " + deDate(h.date), "note", "z. B. Heft vergessen, Aufgabe nachgereicht"); },
         onDelete: async function(){
           var ok = await ask("Eintrag löschen",
             "Vergessene Hausaufgabe vom " + deDate(h.date) + " entfernen?", "Löschen", true);
