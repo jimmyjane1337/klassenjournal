@@ -58,6 +58,10 @@
 /* touch-action:manipulation nimmt dem Doppeltippen das Zoomen — Zwei-Finger-Zoom
    und Scrollen bleiben erhalten, damit die App vergrößerbar bleibt. */
 *{box-sizing:border-box; touch-action:manipulation}
+/* Nichts lässt sich versehentlich markieren — die Oberfläche ist zum Tippen da.
+   Eingabefelder bleiben ausgenommen, sonst wäre Korrigieren nicht möglich. */
+body{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+input, textarea, select{-webkit-user-select:text; user-select:text}
 html,body{height:100%}
 body{
   margin:0; background:var(--paper); color:var(--ink);
@@ -342,8 +346,15 @@ dialog .df{padding:12px 16px; border-top:1px solid var(--line); display:flex; ga
 @media (max-width:340px){ .hstat{font-size:10px; column-gap:6px} }
 .hstat b{font-weight:600}
 hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
+/* Gliederung im dunklen Bereich — heller als die Linien in den Inhaltsboxen */
+hr.teil{border:0; border-top:1px solid rgba(233,239,248,.20); margin:2px 2px}
 .hidden{display:none !important}
 .cfgH{font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:16px; letter-spacing:-.01em}
+.cfgRow{display:flex; align-items:center; justify-content:space-between; gap:10px}
+/* Ampel der Kachel: grün wenn der Abgleich läuft, rot wenn er hängt */
+.sdot{width:11px; height:11px; border-radius:50%; flex:0 0 auto; background:var(--line-strong)}
+.sdot.gruen{background:var(--good)}
+.sdot.rot{background:var(--bad)}
 .row3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
 .row3 input{width:100%}
 /* die drei Beschriftungen müssen je in eine Zeile passen */
@@ -383,7 +394,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
     <div class="today" id="todayLbl"></div>
     <button class="hdrBtn" type="button" id="hdr-export" aria-label="Einstellungen">
       <span class="dot"></span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.2-2.1.9a7.6 7.6 0 0 0-2.6-1.5L14.2 2H9.8l-.4 2.3a7.6 7.6 0 0 0-2.6 1.5l-2.1-.9-1.9 3.2 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.2 2.1-.9a7.6 7.6 0 0 0 2.6 1.5l.4 2.3h4.4l.4-2.3a7.6 7.6 0 0 0 2.6-1.5l2.1.9 1.9-3.2z"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.2"/><circle cx="12" cy="12" r="2.6"/><path d="M18.2 12h2.4M16.38 16.38l1.7 1.7M12 18.2v2.4M7.62 16.38l-1.7 1.7M5.8 12H3.4M7.62 7.62l-1.7-1.7M12 5.8V3.4M16.38 7.62l1.7-1.7"/></svg>
     </button>
   </div>
 </header>
@@ -544,6 +555,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
         <div class="stat"><b id="st-h">0</b><span>Vergessene HA</span></div>
         <div class="stat"><b id="st-s">0</b><span>Schüler</span></div>
       </div>
+      <hr class="teil">
 
       <div class="card stack">
         <div class="cfgH">Abfrage</div>
@@ -590,6 +602,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
       </div>
 
       <p class="gradeMeta" style="margin:0 2px">Halbjahre fest: 1. HJ August–Januar, 2. HJ Februar–Juli · aktuell <span id="set-termnow"></span></p>
+      <hr class="teil">
 
       <div class="card stack">
         <div class="cfgH">Sicherungsdatei</div>
@@ -610,7 +623,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
       </div>
 
       <div class="card stack">
-        <div class="cfgH">OneDrive</div>
+        <div class="cfgH cfgRow">OneDrive<span class="sdot aus" id="sy-dot" aria-hidden="true"></span></div>
         <div class="gradeMeta" id="sy-state">nicht verbunden</div>
         <button class="btn primary wide" id="sy-connect">Mit OneDrive verbinden</button>
         <button class="btn wide hidden" id="sy-now">Jetzt abgleichen</button>
@@ -618,7 +631,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
         <p class="gradeMeta" id="sy-hint" style="margin:0"></p>
         <div class="hidden" id="sy-uriBox">
           <span class="label">In Entra zu hinterlegende Umleitungsadresse</span>
-          <div class="gradeMeta" id="sy-uri" style="word-break:break-all; user-select:all"></div>
+          <div class="gradeMeta" id="sy-uri" style="font-size:10.5px; line-height:1.4; word-break:break-all; user-select:all; -webkit-user-select:all"></div>
           <button class="btn sm" id="sy-copy" style="margin-top:8px">Adresse kopieren</button>
         </div>
         <button class="btn sm hidden" id="sy-manual">Anmeldung von Hand abschließen</button>
@@ -1939,7 +1952,6 @@ function renderExport(){
     : "noch nie exportiert — ohne sie sind die Kürzel nicht auflösbar";
   $("zo-last").style.color = alt ? "var(--warn)" : "";
   $("zo-save").className = "btn wide" + (alt ? " primary" : "");
-  $("hdr-export").classList.toggle("mahnt", alt);
   /* Statt aller Werte nur die Schwellen: ab wie vielen richtigen Antworten welche Note */
   var total = S.settings.setSize * S.settings.setRuns, parts = [];
   for (var g = 1; g <= 5; g++){
@@ -2711,10 +2723,23 @@ function syncSoon(){
   }, 20000);
 }
 
+/* Der Abgleich soll nicht unbemerkt stehenbleiben: nach drei Tagen ohne
+   erfolgreichen Durchlauf gilt er als hängend. */
+var SYNC_FRIST = 3 * 24 * 3600 * 1000;
+function syncHaengt(){
+  if (!msAn()) return false;
+  if (syncFehler) return true;
+  if (!S.settings.lastSync) return true;
+  return (Date.now() - new Date(S.settings.lastSync).getTime()) > SYNC_FRIST;
+}
 function renderSync(){
   var st = $("sy-state"), hint = $("sy-hint");
   if (!st) return;
-  var verbunden = msAn();
+  var verbunden = msAn(), haengt = syncHaengt();
+  /* Zuerst die beiden Anzeigen, die in jeder Lage stimmen muessen. */
+  var punkt = $("sy-dot");
+  if (punkt) punkt.className = "sdot " + (!verbunden ? "aus" : (haengt ? "rot" : "gruen"));
+  $("hdr-export").classList.toggle("mahnt", zuordnungVeraltet() || haengt);
   $("sy-connect").classList.toggle("hidden", verbunden);
   $("sy-now").classList.toggle("hidden", !verbunden);
   $("sy-off").classList.toggle("hidden", !verbunden);
@@ -2723,7 +2748,7 @@ function renderSync(){
   $("sy-uri").textContent = msRedirect();
   if (!msMoeglich()){
     st.textContent = "hier nicht verfügbar";
-    hint.textContent = "Die Anmeldung braucht die installierte App unter ihrer eigenen Adresse. In dieser Vorschau bleibt der Weg über „XLSX-Datei erzeugen & teilen“.";
+    hint.textContent = "Der Abgleich braucht die installierte App unter ihrer eigenen Adresse. In dieser Vorschau ist die Anmeldung gesperrt.";
     $("sy-connect").classList.add("hidden");
     return;
   }
@@ -2734,6 +2759,11 @@ function renderSync(){
       new Date(S.settings.lastSync).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" });
   } else st.textContent = "verbunden · noch nicht abgeglichen";
   hint.textContent = syncFehler ? syncFehler
+    : (verbunden && haengt)
+      ? (S.settings.lastSync
+          ? "Seit " + new Date(S.settings.lastSync).toLocaleDateString("de-DE", { dateStyle:"medium" }) +
+            " nicht mehr abgeglichen — beim nächsten Öffnen mit Netz holt die App es nach."
+          : "Noch kein Abgleich gelaufen.")
     : verbunden ? "Spiegelt den Bestand. Abgeglichen wird beim Öffnen und nach jeder Änderung."
     : "Schützt gegen Geräteverlust. Anmeldung mit dem Microsoft-Konto, in dessen OneDrive der Bestand liegen soll.";
 }
