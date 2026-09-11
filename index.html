@@ -89,6 +89,10 @@ header.top .hw{
 }
 .hdrBtn svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
 .hdrBtn[aria-current="true"]{color:var(--accent); background:var(--accent-tint)}
+.hdrBtn{position:relative}
+.hdrBtn .dot{position:absolute; top:5px; right:5px; width:9px; height:9px; border-radius:50%;
+  background:var(--warn); border:1.5px solid var(--surface); display:none}
+.hdrBtn.mahnt .dot{display:block}
 .brand{font-family:"Bricolage Grotesque", ui-sans-serif, sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em}
 .brand span{color:var(--accent)}
 .today{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; text-align:right; line-height:1.35}
@@ -312,7 +316,7 @@ dialog .df{padding:12px 16px; border-top:1px solid var(--line); display:flex; ga
   width:100%; display:flex; align-items:center; gap:10px; padding:12px 14px;
   border:0; background:transparent; font:inherit; text-align:left; cursor:pointer; min-height:52px;
 }
-.klChev{flex:0 0 12px; color:var(--ink-3); font-size:12px; line-height:1}
+.klChev{flex:0 0 16px; color:var(--ink-3); font-size:17px; line-height:1}
 .klName{flex:1 1 auto; min-width:0; font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:17px; color:var(--ink)}
 .klCnt{flex:0 0 auto; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
 .klBody{padding:12px 14px 14px; border-top:1px solid var(--line)}
@@ -377,8 +381,9 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
   <div class="hw">
     <div class="brand">Klassen<span>journal</span></div>
     <div class="today" id="todayLbl"></div>
-    <button class="hdrBtn" type="button" id="hdr-export" aria-label="Export und Einstellungen">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5L12 4l3.5 3.5"/><path d="M4.5 14v4.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+    <button class="hdrBtn" type="button" id="hdr-export" aria-label="Einstellungen">
+      <span class="dot"></span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.2-2.1.9a7.6 7.6 0 0 0-2.6-1.5L14.2 2H9.8l-.4 2.3a7.6 7.6 0 0 0-2.6 1.5l-2.1-.9-1.9 3.2 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.2 2.1-.9a7.6 7.6 0 0 0 2.6 1.5l.4 2.3h4.4l.4-2.3a7.6 7.6 0 0 0 2.6-1.5l2.1.9 1.9-3.2z"/></svg>
     </button>
   </div>
 </header>
@@ -531,7 +536,7 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 
   <!-- ===== EXPORT ===== -->
   <section id="v-export" class="hidden">
-    <h2 class="vt">Export &amp; Einstellungen</h2>
+    <h2 class="vt">Einstellungen</h2>
     <div class="stack">
       <div class="stats">
         <div class="stat"><b id="st-v">0</b><span>Abfragen</span></div>
@@ -539,54 +544,6 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
         <div class="stat"><b id="st-h">0</b><span>Vergessene HA</span></div>
         <div class="stat"><b id="st-s">0</b><span>Schüler</span></div>
       </div>
-      <button class="btn primary wide" id="ex-xlsx">XLSX-Datei erzeugen &amp; teilen</button>
-      <button class="btn wide" id="ex-csv">CSV-Datei erzeugen &amp; teilen</button>
-      <div class="card">
-        <span class="label">Letzter Export</span>
-        <div class="gradeMeta" id="ex-last">noch nie</div>
-      </div>
-
-      <div class="card stack">
-        <div class="cfgH">Sicherung &amp; Wiederherstellung</div>
-        <p class="gradeMeta" style="margin:0">Enthält Klassen, Abfragen, mündliche Bewertungen und Hausaufgaben — mit Kürzeln statt Namen. Beim Einlesen wird zusammengeführt, nicht ersetzt.</p>
-        <button class="btn wide" id="bk-save">Sicherung erstellen</button>
-        <button class="btn wide" id="bk-load">Sicherung einlesen</button>
-        <input type="file" id="bk-file" accept=".json,application/json" hidden>
-        <div class="gradeMeta" id="bk-last">noch nie gesichert</div>
-      </div>
-
-      <div class="card stack">
-        <div class="cfgH">Zuordnungsliste</div>
-        <p class="gradeMeta" style="margin:0">Nur Kürzel und Namen, keine Noten. Gehört an einen <b>anderen Ort als die Sicherung</b> — etwa iCloud statt OneDrive. Erst beide zusammen ergeben den vollständigen Bestand.</p>
-        <button class="btn wide" id="zo-save">Zuordnungsliste exportieren</button>
-        <button class="btn wide" id="zo-load">Zuordnungsliste einlesen</button>
-        <input type="file" id="zo-file" accept=".csv,text/csv" hidden>
-        <div class="gradeMeta" id="zo-last">noch nie exportiert</div>
-      </div>
-
-      <div class="card stack">
-        <div class="cfgH">OneDrive</div>
-        <div class="gradeMeta" id="sy-state">nicht verbunden</div>
-        <button class="btn primary wide" id="sy-connect">Mit OneDrive verbinden</button>
-        <button class="btn wide hidden" id="sy-now">Jetzt abgleichen</button>
-        <button class="btn wide hidden" id="sy-off">Verbindung trennen</button>
-        <p class="gradeMeta" id="sy-hint" style="margin:0"></p>
-        <div class="hidden" id="sy-uriBox">
-          <span class="label">In Entra zu hinterlegende Umleitungsadresse</span>
-          <div class="gradeMeta" id="sy-uri" style="word-break:break-all; user-select:all"></div>
-          <button class="btn sm" id="sy-copy" style="margin-top:8px">Adresse kopieren</button>
-        </div>
-        <button class="btn sm hidden" id="sy-manual">Anmeldung von Hand abschließen</button>
-      </div>
-
-      <details class="help">
-        <summary>Wie der Abgleich arbeitet</summary>
-        <div class="body">
-          <p>Die App legt zwei Dateien in einem <b>eigenen Ordner</b> in OneDrive ab: <code>klassenjournal.json</code> als Bestand und <code>Klassenjournal.xlsx</code> als lesbare Auswertung, bei jedem Abgleich neu erzeugt. Beides führt Kürzel, keine Namen. Auf andere Dateien in OneDrive hat die App keinen Zugriff.</p>
-          <p>Abgeglichen wird beim Öffnen und kurz nach jeder Änderung, nie mitten in einer laufenden Abfrage. Ohne Netz sammelt die App und überträgt beim nächsten Mal.</p>
-          <p>Zusammengeführt, nicht überschrieben: Was auf dem einen Gerät entstanden ist, kommt auf dem anderen hinzu. Gelöschtes bleibt gelöscht, auch auf dem anderen Gerät.</p>
-        </div>
-      </details>
 
       <div class="card stack">
         <div class="cfgH">Abfrage</div>
@@ -634,10 +591,82 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
 
       <p class="gradeMeta" style="margin:0 2px">Halbjahre fest: 1. HJ August–Januar, 2. HJ Februar–Juli · aktuell <span id="set-termnow"></span></p>
 
+      <div class="card stack">
+        <div class="cfgH">Sicherungsdatei</div>
+        <p class="gradeMeta" style="margin:0"><b>Die einzige Kopie außerhalb des Microsoft-Kontos.</b> Eine Datei mit dem kompletten Bestand — Kürzel statt Namen. Nicht mehr wöchentlich nötig, seit die Tagessicherungen in OneDrive laufen: einmal zum Halbjahresende und vor größeren Eingriffen genügt. Beim Einlesen wird zusammengeführt, nicht ersetzt.</p>
+        <button class="btn wide" id="bk-save">Sicherung erstellen</button>
+        <button class="btn wide" id="bk-load">Sicherung einlesen</button>
+        <input type="file" id="bk-file" accept=".json,application/json" hidden>
+        <div class="gradeMeta" id="bk-last">noch nie gesichert</div>
+      </div>
+
+      <div class="card stack">
+        <div class="cfgH">Zuordnungsliste</div>
+        <p class="gradeMeta" style="margin:0"><b>Bringt die Namen zurück.</b> Nur Kürzel und Namen, keine Noten. Gehört an einen <b>anderen Ort als alles andere</b> — etwa iCloud statt OneDrive. Ohne sie ist ein wiederhergestellter Bestand vollständig, aber keiner Person mehr zuzuordnen. Nach jeder Klassenänderung neu exportieren.</p>
+        <button class="btn wide" id="zo-save">Zuordnungsliste exportieren</button>
+        <button class="btn wide" id="zo-load">Zuordnungsliste einlesen</button>
+        <input type="file" id="zo-file" accept=".csv,text/csv" hidden>
+        <div class="gradeMeta" id="zo-last">noch nie exportiert</div>
+      </div>
+
+      <div class="card stack">
+        <div class="cfgH">OneDrive</div>
+        <div class="gradeMeta" id="sy-state">nicht verbunden</div>
+        <button class="btn primary wide" id="sy-connect">Mit OneDrive verbinden</button>
+        <button class="btn wide hidden" id="sy-now">Jetzt abgleichen</button>
+        <button class="btn wide hidden" id="sy-off">Verbindung trennen</button>
+        <p class="gradeMeta" id="sy-hint" style="margin:0"></p>
+        <div class="hidden" id="sy-uriBox">
+          <span class="label">In Entra zu hinterlegende Umleitungsadresse</span>
+          <div class="gradeMeta" id="sy-uri" style="word-break:break-all; user-select:all"></div>
+          <button class="btn sm" id="sy-copy" style="margin-top:8px">Adresse kopieren</button>
+        </div>
+        <button class="btn sm hidden" id="sy-manual">Anmeldung von Hand abschließen</button>
+      </div>
+
+      <details class="help">
+        <summary>Wie der Abgleich arbeitet</summary>
+        <div class="body">
+          <p>Die App legt zwei Dateien in einem <b>eigenen Ordner</b> in OneDrive ab: <code>klassenjournal.json</code> als Bestand und <code>Klassenjournal.xlsx</code> als lesbare Auswertung, bei jedem Abgleich neu erzeugt. Beides führt Kürzel, keine Namen. Auf andere Dateien in OneDrive hat die App keinen Zugriff.</p>
+          <p>Abgeglichen wird beim Öffnen und kurz nach jeder Änderung, nie mitten in einer laufenden Abfrage. Ohne Netz sammelt die App und überträgt beim nächsten Mal.</p>
+          <p>Zusammengeführt, nicht überschrieben: Was auf dem einen Gerät entstanden ist, kommt auf dem anderen hinzu. Gelöschtes bleibt gelöscht, auch auf dem anderen Gerät.</p>
+          <p><b>Ein Spiegel, kein Backup.</b> Die Kopie in OneDrive zeigt immer den aktuellen Stand — auch den leeren. Was hier gelöscht wird, verschwindet dort mit.</p>
+          <p><b>Dagegen helfen die Tagessicherungen.</b> Beim ersten Abgleich eines Tages legt die App zusätzlich <code>sicherung-JJJJ-MM-TT.json</code> im selben Ordner ab und räumt alte wieder weg: die letzten vierzehn Tage vollständig, davor je der erste Stand eines Monats für ein Jahr. Diese Dateien werden nie überschrieben. Um einen davon zurückzuholen: in OneDrive herunterladen und hier über <em>Sicherung einlesen</em> einspielen.</p>
+          <p>OneDrive führt zwar auch einen eigenen Versionsverlauf, aber nur 25 Fassungen je Datei — bei unserer Abgleichsfrequenz reicht der kaum über einen Tag hinaus. Deshalb die eigenen Stände.</p>
+        </div>
+      </details>
+
+      <details class="help">
+        <summary>Was liegt wo — und wogegen es schützt</summary>
+        <div class="body">
+          <p><b>Auf dem Gerät</b> · der Bestand, mit dem gearbeitet wird. Klarnamen gibt es nur hier.</p>
+          <p><b>In OneDrive, als Spiegel</b> · der aktuelle Stand, mit Kürzeln. Gegen Geräteverlust. Folgt jeder Änderung, auch dem Löschen.</p>
+          <p><b>In OneDrive, als Tagessicherung</b> · ein Stand je Tag, vierzehn Tage plus zwölf Monatsstände. Gegen Fehler, die erst später auffallen. Läuft von selbst.</p>
+          <p><b>Sicherungsdatei</b> · ein eingefrorener Stand außerhalb des Microsoft-Kontos. Für den Fall, dass dieses Konto selbst verloren geht.</p>
+          <p><b>Zuordnungsliste</b> · Kürzel und Namen, sonst nichts. An einem anderen Ort als die beiden vorigen. Erst sie macht einen wiederhergestellten Bestand wieder lesbar.</p>
+        </div>
+      </details>
+
+      <details class="help">
+        <summary>Gerät verloren — so kommt alles zurück</summary>
+        <div class="body">
+          <p>Mit eingerichtetem Abgleich:</p>
+          <ol>
+            <li>Auf dem neuen Gerät dieselbe Adresse in Safari öffnen und über <em>Teilen</em> zum Home-Bildschirm hinzufügen.</li>
+            <li>In diesem Reiter <em>Mit OneDrive verbinden</em>, mit demselben Microsoft-Konto anmelden. Der erste Abgleich holt Klassen, Abfragen, mündliche Bewertungen und Hausaufgaben zurück.</li>
+            <li>Die Schüler heißen jetzt <code>7b-01</code>, <code>7b-02</code> … Mit <em>Zuordnungsliste einlesen</em> stehen die Namen wieder da.</li>
+          </ol>
+          <p>Ohne Abgleich führt derselbe Weg über <em>Sicherung einlesen</em> statt Schritt 2 — zurück kommt dann der Stand der letzten Sicherungsdatei.</p>
+          <p>Soll nicht der aktuelle, sondern ein früherer Stand zurück: in OneDrive die passende <code>sicherung-JJJJ-MM-TT.json</code> herunterladen und über <em>Sicherung einlesen</em> einspielen.</p>
+          <p>Beides setzt voraus, dass die Zuordnungsliste existiert und aktuell ist. Ohne sie bleiben die Kürzel stehen.</p>
+        </div>
+      </details>
+
+
       <details class="help">
         <summary>Daten &amp; Datenschutz</summary>
         <div class="body">
-          <p>Alle Einträge liegen derzeit ausschließlich im Speicher dieses Geräts. Sie gehen nirgendwo hin, außer du erzeugst den Export. Deshalb regelmäßig sichern.</p>
+          <p>Die Einträge liegen im Speicher dieses Geräts. Ist der Abgleich eingerichtet, zusätzlich in einem eigenen Ordner in OneDrive — dort mit Kürzeln statt Namen. Wer Kürzel und Name zusammenbringen will, braucht die Zuordnungsliste, und die legst du selbst ab.</p>
           <p>Klarnamen plus Leistungsdaten sind personenbezogene Daten nach Art. 4 DSGVO. Vor dem Ablegen in einer Cloud gehört das mit Schulleitung bzw. Datenschutzbeauftragtem abgeklärt. Kürzel statt Klarnamen lösen die Frage weitgehend.</p>
         </div>
       </details>
@@ -740,18 +769,6 @@ hr.sep{border:0; border-top:1px solid var(--line); margin:22px 0 0}
   <div class="df">
     <button class="btn ghost" id="dlgPasteCancel">Abbrechen</button>
     <button class="btn primary" id="dlgPasteOk">Übernehmen</button>
-  </div>
-</dialog>
-
-<dialog id="dlgOut">
-  <div class="dh"><div class="t">Export als CSV</div></div>
-  <div class="db">
-    <p style="margin:0; font-size:14.5px; color:var(--ink-2)">Text markieren und kopieren, oder den Kopieren-Knopf nutzen.</p>
-    <div class="mono-out" id="dlgOutText"></div>
-  </div>
-  <div class="df">
-    <button class="btn ghost" id="dlgOutClose">Schließen</button>
-    <button class="btn primary" id="dlgOutCopy">Kopieren</button>
   </div>
 </dialog>
 
@@ -880,7 +897,7 @@ function toast(msg){
 /* ---------- Zustand ---------- */
 function defaults(){
   return { scale:[91,75,58,41,25], oralScale:[3,2,1,0,-1], setSize:6, setRuns:2, seats:4,
-           hwWarn:2, hwAlert:3, lastExport:null, lastBackup:null, lastMap:null, lastSync:null };
+           hwWarn:2, hwAlert:3, lastBackup:null, lastMap:null, lastSync:null, lastSnap:null, lastRoster:null };
 }
 function seed(){
   var names = "Amelie Brandt,Jonas Deger,Merve Kaya,Noah Riedl,Pia Sommer,Tarek Öz,Lena Vogt,Finn Wieland".split(",");
@@ -946,6 +963,17 @@ function save(){
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
   catch(e){ toast("Speichern fehlgeschlagen — Speicher voll oder blockiert"); }
   if (typeof syncSoon === "function") syncSoon();
+}
+/* Die Zuordnungsliste ist der einzige Weg von Kuerzeln zurueck zu Namen. Aendert
+   sich der Klassenbestand, ist eine alte Liste unvollstaendig — dann wird erinnert. */
+function rosterGeaendert(){
+  S.settings.lastRoster = new Date().toISOString();
+}
+function zuordnungVeraltet(){
+  var hatSchueler = S.classes.some(function(c){ return c.students.length && !c.demo; });
+  if (!hatSchueler) return false;
+  if (!S.settings.lastMap) return true;
+  return !!S.settings.lastRoster && S.settings.lastRoster > S.settings.lastMap;
 }
 function cls(id){ for (var i=0;i<S.classes.length;i++) if (S.classes[i].id===id) return S.classes[i]; return null; }
 
@@ -1821,6 +1849,7 @@ function renderClasses(){
         });
         tomb(c.id);
         S.classes = S.classes.filter(function(x){ return x.id !== c.id; });
+        rosterGeaendert();
         if (sel.cls === c.id) sel.cls = S.classes.length ? S.classes[0].id : null;
         klOpen = null;
         save(); refreshAll(); toast("Klasse gelöscht");
@@ -1880,7 +1909,9 @@ $("dlgClassSave").addEventListener("click", function(){
     S.classes.push(neuK);
   }
   S.classes.sort(byClass);
-  save(); $("dlgClass").close(); refreshAll(); toast("Gespeichert");
+  rosterGeaendert();
+  save(); $("dlgClass").close(); refreshAll();
+  toast(zuordnungVeraltet() ? "Gespeichert — Zuordnungsliste ist jetzt veraltet" : "Gespeichert");
 });
 
 /* ================= EINSTELLUNGEN & EXPORT ================= */
@@ -1890,9 +1921,6 @@ function renderExport(){
   $("st-h").textContent = S.homework.length;
   var n = 0; S.classes.forEach(function(c){ n += c.students.length; });
   $("st-s").textContent = n;
-  $("ex-last").textContent = S.settings.lastExport
-    ? new Date(S.settings.lastExport).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
-    : "noch nie";
   for (var i = 0; i < 5; i++) $("sc" + (i+1)).value = S.settings.scale[i];
   for (var j = 0; j < 5; j++) $("os" + (j+1)).value = S.settings.oralScale[j];
   $("set-size").value = S.settings.setSize;
@@ -1904,9 +1932,14 @@ function renderExport(){
   $("bk-last").textContent = S.settings.lastBackup
     ? "zuletzt gesichert " + new Date(S.settings.lastBackup).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
     : "noch nie gesichert";
+  var alt = zuordnungVeraltet();
   $("zo-last").textContent = S.settings.lastMap
-    ? "zuletzt exportiert " + new Date(S.settings.lastMap).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" })
-    : "noch nie exportiert — ohne sie ist die Sicherung nicht auflösbar";
+    ? (alt ? "veraltet — die Klassenlisten haben sich seitdem geändert"
+           : "zuletzt exportiert " + new Date(S.settings.lastMap).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" }))
+    : "noch nie exportiert — ohne sie sind die Kürzel nicht auflösbar";
+  $("zo-last").style.color = alt ? "var(--warn)" : "";
+  $("zo-save").className = "btn wide" + (alt ? " primary" : "");
+  $("hdr-export").classList.toggle("mahnt", alt);
   /* Statt aller Werte nur die Schwellen: ab wie vielen richtigen Antworten welche Note */
   var total = S.settings.setSize * S.settings.setRuns, parts = [];
   for (var g = 1; g <= 5; g++){
@@ -2225,16 +2258,6 @@ async function deliver(blob, name){
   return false;
 }
 
-$("ex-xlsx").addEventListener("click", async function(){
-  if (!S.vocab.length && !S.homework.length && !S.oral.length){ toast("Noch keine Einträge zum Exportieren"); return; }
-  if (running()) toast("Hinweis: die laufende Abfrage ist noch nicht enthalten");
-  var bytes;
-  try { bytes = buildXlsx(buildSheets()); }
-  catch(e){ toast("Datei konnte nicht erzeugt werden"); return; }
-  var blob = new Blob([bytes], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  if (!await deliver(blob, "Klassenjournal_" + iso() + ".xlsx")){ toast("Ablegen hier nicht möglich — versuche den CSV-Knopf"); return; }
-  S.settings.lastExport = new Date().toISOString(); save(); renderExport();
-});
 
 /* ---------- Sicherung erstellen und einlesen ---------- */
 /* Die Sicherung verlässt das Gerät — sie führt Kürzel, aber keine Namen. */
@@ -2464,33 +2487,6 @@ function csvCell(v){
   s = String(s);
   return /[";\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
 }
-function csvText(){
-  var txt = "";
-  buildSheets().forEach(function(sh){
-    txt += "### " + sh.name + "\n";
-    sh.rows.forEach(function(r){ txt += r.map(csvCell).join(";") + "\n"; });
-    txt += "\n";
-  });
-  return txt;
-}
-$("ex-csv").addEventListener("click", async function(){
-  if (!S.vocab.length && !S.homework.length && !S.oral.length){ toast("Noch keine Einträge zum Exportieren"); return; }
-  var txt = csvText();
-  /* BOM voran, sonst zeigt Excel Umlaute falsch an */
-  var blob = new Blob(["\ufeff" + txt], { type:"text/csv;charset=utf-8" });
-  if (await deliver(blob, "Klassenjournal_" + iso() + ".csv")) return;
-  /* geht das Ablegen nicht, bleibt der Weg über die Zwischenablage */
-  $("dlgOutText").textContent = txt;
-  $("dlgOut").showModal();
-  $("dlgOutCopy").onclick = function(){
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(txt).then(
-        function(){ toast("In die Zwischenablage kopiert"); },
-        function(){ toast("Kopieren blockiert — Text von Hand markieren"); });
-    } else toast("Kopieren blockiert — Text von Hand markieren");
-  };
-});
-$("dlgOutClose").addEventListener("click", function(){ $("dlgOut").close(); });
 
 
 /* ---------- OneDrive: Anmeldung und Abgleich ----------
@@ -2624,6 +2620,7 @@ async function msSync(leise){
       await msPut("Klassenjournal.xlsx", new Blob([buildXlsx(buildSheets())]),
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     } catch(e){ /* die Auswertung ist Beiwerk, der Bestand liegt schon oben */ }
+    try { await msSnapshot(); } catch(e){ /* die Tagessicherung ist Beiwerk */ }
     S.settings.lastSync = new Date().toISOString();
     save(); renderExport();
     if (!leise) toast("Abgeglichen");
@@ -2637,6 +2634,52 @@ async function msSync(leise){
     if (!leise) toast(syncFehler);
   }
   syncing = false; renderSync();
+}
+
+/* Tagessicherungen: der Spiegel wird bei jedem Abgleich ueberschrieben, diese
+   Staende nicht. Sie sind das Einzige, was mehr als ein paar Stunden zurueckreicht —
+   OneDrives eigener Versionsverlauf haelt nur 25 Fassungen je Datei, und die sind
+   bei unserer Abgleichsfrequenz nach ein, zwei Tagen aufgebraucht. */
+var SNAP = /^sicherung-\d{4}-\d{2}-\d{2}\.json$/;
+var SNAP_TAGE = 14, SNAP_MONATE = 12;
+
+async function msList(){
+  var t = await msAccess();
+  var r = await fetch("https://graph.microsoft.com/v1.0/me/drive/special/approot/children?$select=name&$top=200",
+                      { headers:{ Authorization:"Bearer " + t } });
+  if (!r.ok) throw new Error("Ordner nicht lesbar (" + r.status + ")");
+  var j = await r.json();
+  return (j.value || []).map(function(x){ return x.name; });
+}
+async function msDel(name){
+  var t = await msAccess();
+  await fetch(MS.root + encodeURIComponent(name),
+              { method:"DELETE", headers:{ Authorization:"Bearer " + t } });
+}
+/* Die letzten Tage vollstaendig, davor je der erste Stand eines Monats. */
+function snapBehalten(namen){
+  var tage = namen.slice().sort(), keep = {}, ersterImMonat = {};
+  tage.slice(-SNAP_TAGE).forEach(function(n){ keep[n] = 1; });
+  tage.forEach(function(n){
+    var m = n.slice(10, 17);
+    if (!ersterImMonat[m]) ersterImMonat[m] = n;
+  });
+  Object.keys(ersterImMonat).sort().slice(-SNAP_MONATE).forEach(function(m){
+    keep[ersterImMonat[m]] = 1;
+  });
+  return keep;
+}
+async function msSnapshot(){
+  var heute = iso();
+  if (S.settings.lastSnap === heute) return;
+  await msPut("sicherung-" + heute + ".json",
+    new Blob([JSON.stringify(backupData())], { type:"application/json" }), "application/json");
+  S.settings.lastSnap = heute; save();
+  var namen = (await msList()).filter(function(n){ return SNAP.test(n); });
+  var keep = snapBehalten(namen);
+  for (var i = 0; i < namen.length; i++){
+    if (!keep[namen[i]]) await msDel(namen[i]);
+  }
 }
 
 /* Ueberschreiben statt zusammenfuehren — nur nach dem bewussten Loeschen, damit
@@ -2691,8 +2734,8 @@ function renderSync(){
       new Date(S.settings.lastSync).toLocaleString("de-DE", { dateStyle:"medium", timeStyle:"short" });
   } else st.textContent = "verbunden · noch nicht abgeglichen";
   hint.textContent = syncFehler ? syncFehler
-    : verbunden ? "Abgeglichen wird beim Öffnen und nach jeder Änderung."
-    : "Anmeldung mit dem Microsoft-Konto, in dessen OneDrive die Sicherung liegen soll.";
+    : verbunden ? "Spiegelt den Bestand. Abgeglichen wird beim Öffnen und nach jeder Änderung."
+    : "Schützt gegen Geräteverlust. Anmeldung mit dem Microsoft-Konto, in dessen OneDrive der Bestand liegen soll.";
 }
 
 /* Rueckkehr von der Anmeldung: entweder direkt in der App, oder von Hand
