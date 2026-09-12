@@ -642,6 +642,7 @@ hr.teil{border:0; border-top:1px solid rgba(233,239,248,.20); margin:2px 2px}
         <div class="body">
           <p>Die App legt zwei Dateien in einem <b>eigenen Ordner</b> in OneDrive ab: <code>klassenjournal.json</code> als Bestand und <code>Klassenjournal.xlsx</code> als lesbare Auswertung, bei jedem Abgleich neu erzeugt. Beides führt Kürzel, keine Namen. Auf andere Dateien in OneDrive hat die App keinen Zugriff.</p>
           <p>Abgeglichen wird beim Öffnen und kurz nach jeder Änderung, nie mitten in einer laufenden Abfrage. Ohne Netz sammelt die App und überträgt beim nächsten Mal.</p>
+          <p><b>Die Anmeldung erneuert sich selbst.</b> Microsoft begrenzt die Anmeldung einer Web-App auf 24 Stunden und verlängert diese Frist nicht. Die App läuft den Vorgang deshalb beim Öffnen selbst noch einmal durch — normalerweise ohne Rückfrage, weil die Microsoft-Sitzung im Browser noch steht. Sichtbar ist höchstens ein kurzes Umschalten. Nur wenn Microsoft doch eine Eingabe verlangt, steht hier ein Hinweis, und es braucht einen Tipp auf <em>Mit OneDrive verbinden</em>.</p>
           <p>Zusammengeführt, nicht überschrieben: Was auf dem einen Gerät entstanden ist, kommt auf dem anderen hinzu. Gelöschtes bleibt gelöscht, auch auf dem anderen Gerät.</p>
           <p><b>Ein Spiegel, kein Backup.</b> Die Kopie in OneDrive zeigt immer den aktuellen Stand — auch den leeren. Was hier gelöscht wird, verschwindet dort mit.</p>
           <p><b>Dagegen helfen die Tagessicherungen.</b> Beim ersten Abgleich eines Tages legt die App zusätzlich <code>sicherung-JJJJ-MM-TT.json</code> im selben Ordner ab und räumt alte wieder weg: die letzten vierzehn Tage vollständig, davor je der erste Stand eines Monats für ein Jahr. Diese Dateien werden nie überschrieben. Um einen davon zurückzuholen: in OneDrive herunterladen und hier über <em>Sicherung einlesen</em> einspielen.</p>
@@ -982,9 +983,12 @@ function save(){
 function rosterGeaendert(){
   S.settings.lastRoster = new Date().toISOString();
 }
+/* Beispieldaten sind kein Bestand — solange nur sie da sind, gibt es nichts zu mahnen. */
+function hatDaten(){
+  return S.classes.some(function(c){ return c.students.length && !c.demo; });
+}
 function zuordnungVeraltet(){
-  var hatSchueler = S.classes.some(function(c){ return c.students.length && !c.demo; });
-  if (!hatSchueler) return false;
+  if (!hatDaten()) return false;
   if (!S.settings.lastMap) return true;
   return !!S.settings.lastRoster && S.settings.lastRoster > S.settings.lastMap;
 }
@@ -2514,6 +2518,11 @@ var MS = {
   root:   "https://graph.microsoft.com/v1.0/me/drive/special/approot:/"
 };
 var MSKEY = "klassenjournal.ms", PKKEY = "klassenjournal.pkce";
+/* Geraeteeigener Merker, der die abgelaufene Anmeldung ueberlebt und nie in eine
+   Sicherung wandert — sonst wuerde ein anderes Geraet ungefragt umgeleitet. */
+var MSON = "klassenjournal.ms.on";
+function msFlag(){ try { return JSON.parse(localStorage.getItem(MSON) || "null") || {}; } catch(e){ return {}; } }
+function msFlagSet(o){ try { localStorage.setItem(MSON, JSON.stringify(o)); } catch(e){} }
 var msTok = null, syncing = false, syncTimer = null, syncFehler = "";
 
 function msLoad(){ try { msTok = JSON.parse(localStorage.getItem(MSKEY) || "null"); } catch(e){ msTok = null; } }
@@ -2540,11 +2549,14 @@ async function msChallenge(v){
   return b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v)));
 }
 
-async function msConnect(){
-  if (!msMoeglich()){ toast("Anmeldung nur in der installierten App möglich"); return; }
+/* still = stille Erneuerung: Microsoft antwortet mit der bestehenden Sitzung,
+   ohne etwas zu fragen. Verlangt es doch eine Eingabe, kommt ein Fehler zurueck
+   statt einer Anmeldemaske — dann bleibt es beim Hinweis in der Kachel. */
+async function msConnect(still){
+  if (!msMoeglich()){ if (!still) toast("Anmeldung nur in der installierten App möglich"); return; }
   var v = msRand(), st = msRand();
-  try { localStorage.setItem(PKKEY, JSON.stringify({ v:v, st:st, t:Date.now() })); }
-  catch(e){ toast("Speicher blockiert — Anmeldung nicht möglich"); return; }
+  try { localStorage.setItem(PKKEY, JSON.stringify({ v:v, st:st, t:Date.now(), still: !!still })); }
+  catch(e){ if (!still) toast("Speicher blockiert — Anmeldung nicht möglich"); return; }
   var url = MS.authz
     + "?client_id=" + encodeURIComponent(MS.client)
     + "&response_type=code"
@@ -2553,7 +2565,7 @@ async function msConnect(){
     + "&code_challenge=" + (await msChallenge(v))
     + "&code_challenge_method=S256"
     + "&state=" + st
-    + "&prompt=select_account";
+    + "&prompt=" + (still ? "none" : "select_account");
   location.href = url;
 }
 
@@ -2648,6 +2660,21 @@ async function msSync(leise){
   syncing = false; renderSync();
 }
 
+/* Microsoft begrenzt die Anmeldung einer Web-App auf 24 Stunden und verlaengert
+   die Frist nicht. Damit daraus keine taegliche Handarbeit wird, laeuft der
+   Vorgang beim Oeffnen von selbst noch einmal durch — hoechstens einmal am Tag
+   und nie waehrend einer laufenden Abfrage. */
+async function msAutoAuth(){
+  var f = msFlag();
+  if (!f.on || msAn()) return false;
+  if (!msMoeglich() || !navigator.onLine) return false;
+  if (running()) return false;
+  if (f.auto === iso()) return false;
+  f.auto = iso(); msFlagSet(f);
+  await msConnect(true);
+  return true;
+}
+
 /* Tagessicherungen: der Spiegel wird bei jedem Abgleich ueberschrieben, diese
    Staende nicht. Sie sind das Einzige, was mehr als ein paar Stunden zurueckreicht —
    OneDrives eigener Versionsverlauf haelt nur 25 Fassungen je Datei, und die sind
@@ -2739,7 +2766,9 @@ function renderSync(){
   /* Zuerst die beiden Anzeigen, die in jeder Lage stimmen muessen. */
   var punkt = $("sy-dot");
   if (punkt) punkt.className = "sdot " + (!verbunden ? "aus" : (haengt ? "rot" : "gruen"));
-  $("hdr-export").classList.toggle("mahnt", zuordnungVeraltet() || haengt);
+  /* Grau heißt: der Bestand liegt nur auf diesem Gerät. Auch das gehört gemeldet. */
+  var ohneSicherung = msMoeglich() && !verbunden && hatDaten();
+  $("hdr-export").classList.toggle("mahnt", zuordnungVeraltet() || haengt || ohneSicherung);
   $("sy-connect").classList.toggle("hidden", verbunden);
   $("sy-now").classList.toggle("hidden", !verbunden);
   $("sy-off").classList.toggle("hidden", !verbunden);
@@ -2765,7 +2794,9 @@ function renderSync(){
             " nicht mehr abgeglichen — beim nächsten Öffnen mit Netz holt die App es nach."
           : "Noch kein Abgleich gelaufen.")
     : verbunden ? "Spiegelt den Bestand. Abgeglichen wird beim Öffnen und nach jeder Änderung."
-    : "Schützt gegen Geräteverlust. Anmeldung mit dem Microsoft-Konto, in dessen OneDrive der Bestand liegen soll.";
+    : ohneSicherung
+      ? "Der Bestand liegt bisher nur auf diesem Gerät. Anmeldung mit dem Microsoft-Konto, in dessen OneDrive er zusätzlich liegen soll."
+      : "Schützt gegen Geräteverlust. Anmeldung mit dem Microsoft-Konto, in dessen OneDrive der Bestand liegen soll.";
 }
 
 /* Rueckkehr von der Anmeldung: entweder direkt in der App, oder von Hand
@@ -2774,7 +2805,17 @@ async function msHandleUrl(href){
   var q;
   try { q = new URL(href, location.href).searchParams; } catch(e){ toast("Das ist keine gültige Adresse"); return false; }
   if (q.get("error")){
+    var pk0 = null;
+    try { pk0 = JSON.parse(localStorage.getItem(PKKEY) || "null"); } catch(e){}
+    try { localStorage.removeItem(PKKEY); } catch(e){}
     var txt = q.get("error_description") || q.get("error");
+    if (pk0 && pk0.still){
+      /* Die stille Erneuerung hat nicht gereicht — kein Grund zur Aufregung,
+         aber einmal antippen muss sie. */
+      syncFehler = "Die Anmeldung bei OneDrive ist abgelaufen — einmal auf „Mit OneDrive verbinden“ tippen.";
+      renderSync();
+      return false;
+    }
     syncFehler = /redirect_uri/.test(txt)
       ? "Microsoft kennt diese Umleitungsadresse nicht. Die unten angezeigte Adresse muss in der App-Registrierung unter „Single-page application“ zeichengleich eingetragen sein — auch der Schrägstrich am Ende zählt."
       : txt;
@@ -2787,8 +2828,12 @@ async function msHandleUrl(href){
   try { pk = JSON.parse(localStorage.getItem(PKKEY) || "null"); } catch(e){}
   if (!pk || pk.st !== st){ toast("Die Anmeldung passt nicht zu dieser App"); return false; }
   try {
+    var pk1 = null;
+    try { pk1 = JSON.parse(localStorage.getItem(PKKEY) || "null"); } catch(e){}
     await msRedeem(code);
-    toast("Mit OneDrive verbunden");
+    var f = msFlag(); f.on = 1; msFlagSet(f);
+    syncFehler = "";
+    if (!(pk1 && pk1.still)) toast("Mit OneDrive verbunden");
     renderSync();
     msSync(true);
     return true;
@@ -2807,7 +2852,7 @@ $("sy-off").addEventListener("click", async function(){
     "Die App meldet sich von OneDrive ab. Die Dateien dort bleiben liegen, die Daten auf dem Gerät auch.",
     "Trennen", true);
   if (!ok) return;
-  msClear(); syncFehler = ""; renderSync(); toast("Verbindung getrennt");
+  msClear(); msFlagSet({}); syncFehler = ""; renderSync(); toast("Verbindung getrennt");
 });
 $("sy-copy").addEventListener("click", function(){
   var v = msRedirect();
@@ -2856,7 +2901,14 @@ if (location.search.indexOf("code=") >= 0 || location.search.indexOf("error=") >
   msHandleUrl(msRedirect() + zurueck);
 } else if (msAn()) {
   msSync(true);
+} else {
+  msAutoAuth();
 }
+/* Kommt die App aus dem Hintergrund zurueck, gilt das als Oeffnen. */
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState !== "visible") return;
+  if (msAn()) msSync(true); else msAutoAuth();
+});
 if (S.session) toast("Laufende Abfrage wiederhergestellt");
 })();
 </script>
