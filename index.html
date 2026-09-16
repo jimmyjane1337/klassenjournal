@@ -828,15 +828,33 @@ function byName(a,b){ return a.name.localeCompare(b.name, "de", { sensitivity:"b
    Erfassungsansichten, nicht aus Auswertung, Verlauf und Export. */
 /* Kürzel werden einmal vergeben und nie wiederverwendet — auch nicht das eines
    ausgeschiedenen Schülers. Nur so bleibt die Zuordnung über Jahre stabil. */
+/* Dieselbe Klasse in zwei Faechern ergaebe sonst zweimal dieselbe Vorsilbe —
+   und damit zweimal dasselbe Kuerzel fuer zwei verschiedene Personen. Deshalb
+   wandert der Anfangsbuchstabe des Fachs mit hinein, und eine trotzdem doppelte
+   Vorsilbe wird durchnummeriert. */
+function freiesPrefix(kandidat, c){
+  var belegt = {};
+  S.classes.forEach(function(x){ if (x !== c && x.codePrefix) belegt[x.codePrefix] = 1; });
+  if (!belegt[kandidat]) return kandidat;
+  for (var i = 2; i < 50; i++){
+    if (!belegt[kandidat + "." + i]) return kandidat + "." + i;
+  }
+  return kandidat + "." + Date.now().toString(36).slice(-3);
+}
 function codePrefix(c){
   if (!c.codePrefix){
-    var m = /^\s*([0-9]{1,2}[A-Za-zÄÖÜäöü]?)/.exec(c.name);
-    c.codePrefix = m ? m[1] : String(c.name).trim().slice(0,3).replace(/\s/g,"");
+    var t = String(c.name).trim();
+    var m = /^\s*([0-9]{1,2}[A-Za-zÄÖÜäöü]?)\s*(.*)$/.exec(t);
+    var basis, rest;
+    if (m){ basis = m[1]; rest = (m[2] || "").trim(); }
+    else { basis = t.slice(0,3).replace(/\s/g,""); rest = ""; }
+    c.codePrefix = freiesPrefix(basis + (rest ? rest.charAt(0).toUpperCase() : ""), c);
   }
   return c.codePrefix;
 }
 function nextCode(c){
-  var pre = codePrefix(c), max = 0, re = new RegExp("^" + pre + "-(\\d+)$");
+  var pre = codePrefix(c), max = 0;
+  var re = new RegExp("^" + pre.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "-(\\d+)$");
   c.students.forEach(function(st){
     var m = st.code && re.exec(st.code);
     if (m) max = Math.max(max, parseInt(m[1], 10));
@@ -2355,22 +2373,31 @@ $("zo-file").addEventListener("change", function(){
     var zeilen = txt.split(/\r?\n/).filter(function(z){ return z.trim(); });
     if (!zeilen.length){ toast("Die Datei ist leer"); return; }
     var kopf = csvZeile(zeilen[0]).map(function(x){ return x.trim().toLowerCase(); });
-    var iCode = kopf.indexOf("kürzel"), iName = kopf.indexOf("name");
+    var iCode = kopf.indexOf("kürzel"), iName = kopf.indexOf("name"), iKlasse = kopf.indexOf("klasse");
     if (iCode < 0 || iName < 0){ toast("Das ist keine Zuordnungsliste — Spalten Kürzel und Name fehlen"); return; }
-    var gesetzt = 0, unbekannt = 0;
+    var gesetzt = 0, unbekannt = 0, mehrdeutig = 0;
     zeilen.slice(1).forEach(function(z){
       var sp = csvZeile(z);
       var code = (sp[iCode] || "").trim(), nm = (sp[iName] || "").trim();
+      var kl = iKlasse >= 0 ? (sp[iKlasse] || "").trim() : "";
       if (!code || !nm) return;
-      var treffer = null;
+      /* Ein Kürzel gilt nur innerhalb seiner Klasse. Ohne Klassenangabe in der
+         Datei bleibt ein doppelt vergebenes Kürzel unauflösbar — dann lieber
+         nichts setzen als den falschen Namen. */
+      var treffer = [];
       S.classes.forEach(function(c){
-        c.students.forEach(function(st){ if (st.code === code) treffer = st; });
+        if (kl && !sameName(c.name, kl)) return;
+        c.students.forEach(function(st){ if (st.code === code) treffer.push(st); });
       });
-      if (treffer){ treffer.name = nm; gesetzt++; } else unbekannt++;
+      if (treffer.length === 1){ treffer[0].name = nm; gesetzt++; }
+      else if (treffer.length > 1) mehrdeutig++;
+      else unbekannt++;
     });
     S.classes.forEach(function(c){ c.students.sort(byName); });
     save(); refreshAll();
-    toast(gesetzt + " Namen zugeordnet" + (unbekannt ? ", " + unbekannt + " Kürzel unbekannt" : ""));
+    toast(gesetzt + " Namen zugeordnet" +
+          (unbekannt ? ", " + unbekannt + " Kürzel unbekannt" : "") +
+          (mehrdeutig ? ", " + mehrdeutig + " ohne Klassenangabe nicht eindeutig" : ""));
   };
   r.readAsText(f);
 });
